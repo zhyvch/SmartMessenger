@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     API_PORT: int = 8000
     API_V1_PREFIX: str = '/api/v1'
     API_DOCS_URL: str = '/api/docs'
+    pg_user: str
+    pg_password: str
+    pg_database: str
 
     DEBUG: bool = True
 
@@ -22,7 +25,8 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=BASE_PATH / '.env',
-        case_sensitive=True,
+        env_prefix="PG_",
+        extra="ignore",
     )
 
 
