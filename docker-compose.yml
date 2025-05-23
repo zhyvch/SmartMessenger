@@ -5,36 +5,47 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: smart_messenger
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - '${API_PORT}:8000'
+    command: 'uvicorn --factory api.main:create_app --host 0.0.0.0 --port 8000 --reload'
     depends_on:
-      - postgres
-      - mongo
+      - smart_messenger_postgres
+      - smart_messenger_mongodb
     volumes:
-      - .:/app
+      - ./src:/app/src
+    restart: unless-stopped
 
-  postgres:
+  smart_messenger_postgres:
     image: postgres:15
+    container_name: smart_messenger_postgres
     env_file:
       - .env
     environment:
-      POSTGRES_USER: ${PG_USER}
-      POSTGRES_PASSWORD: ${PG_PASSWORD}
-      POSTGRES_DB: ${PG_DATABASE}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+      - POSTGRES_DB=${PG_DATABASE}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - smart_messenger_pgdata:/var/lib/postgresql/data
     ports:
-      - "5430:5430"
+      - '${PG_PORT}:5432'
+    restart: unless-stopped
 
-  mongo:
-    image: mongo:6
-    volumes:
-      - mongodata:/data/db
+  smart_messenger_mongodb:
+    image: mongo:8
+    container_name: smart_messenger_mongodb
     ports:
-      - "27017:27017"
+      - '${MONGODB_PORT}:27017'
+    volumes:
+      - smart_messenger_mongodata:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGODB_DB}
+    restart: unless-stopped
 
 volumes:
-  pgdata:
-  mongodata:
+  smart_messenger_pgdata:
+  smart_messenger_mongodata:

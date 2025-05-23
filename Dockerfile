@@ -1,10 +1,24 @@
-FROM python:3.13-slim
-RUN pip install --no-cache-dir poetry
+FROM python:3.13.1-slim-bullseye
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
 WORKDIR /app
-COPY pyproject.toml poetry.lock* /app/
-RUN poetry config virtualenvs.create false \
- && poetry install --no-interaction --no-ansi --no-root
-COPY . /app
-ENV PYTHONPATH=/app
-EXPOSE 8000
-CMD ["uvicorn", "src.api.v1.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+
+RUN apt update -y && \
+    apt install -y python3-dev \
+    gcc \
+    musl-dev \
+    curl
+
+COPY pyproject.toml /app/
+
+RUN pip install --upgrade pip
+RUN pip install poetry
+
+RUN poetry config virtualenvs.create false
+RUN poetry install --no-root --no-interaction --no-ansi
+
+COPY . /app/
+
+ENV PYTHONPATH=/app/src

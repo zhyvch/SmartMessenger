@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from src.apps.chats.db import init_mongo
 from src.settings.config import settings
 from src.api.v1.handlers import router as v1_router
 from src.api.v1.websocket.handlers import router as v1_ws_router
@@ -16,7 +17,7 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    ...
+    await init_mongo()
     yield
     ...
 
@@ -35,7 +36,7 @@ def create_app():
     return app
 
 
-if __name__ == '__main__':
+if __name__ == '__main__' and not settings.DOCKER_RUN:
     import uvicorn
 
     uvicorn.run(
