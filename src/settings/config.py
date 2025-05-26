@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,6 +31,9 @@ class Settings(BaseSettings):
     MONGODB_HOST: str
     MONGODB_PORT: int
     MONGODB_DB: str
+
+    SECRET_KEY: str
+
 
     @property
     def POSTGRES_URL(self):
