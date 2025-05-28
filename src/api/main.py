@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
+from api.exception_handlers import exception_registry
 from src.apps.chats.db import init_mongo
 from src.database import init_db
 from src.settings.config import settings
@@ -47,6 +48,7 @@ def create_app():
     app.include_router(v1_router, prefix=settings.API_V1_PREFIX)
     app.include_router(v1_ws_router, prefix=settings.API_V1_PREFIX)
     app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
+    exception_registry(app)
 
     return app
 
