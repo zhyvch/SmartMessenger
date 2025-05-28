@@ -24,6 +24,7 @@ services:
     env_file:
       - .env
     environment:
+      - DATABASE_URL=${DATABASE_URL}
       - POSTGRES_USER=${PG_USER}
       - POSTGRES_PASSWORD=${PG_PASSWORD}
       - POSTGRES_DB=${PG_DATABASE}

@@ -8,7 +8,7 @@ Base = declarative_base()
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://user:pass@smart_messenger_postgres:5432/mydb"
+    f"postgresql://{os.getenv('PG_USER')}:{os.getenv('PG_PASSWORD')}@{os.getenv('PG_HOST')}:{os.getenv('PG_PORT')}/{os.getenv('PG_DATABASE')}"
 )
 
 # Create database if it doesn't exist (dev environment)
