@@ -11,7 +11,7 @@ from src.settings.config import settings
 from src.api.v1.handlers import router as v1_router
 from src.api.v1.websocket.handlers import router as v1_ws_router
 from src.apps.users.routers.auth import router as auth_router
-
+from src.api.AI.openAI import router as ai_router
 
 logging.basicConfig(
     level=settings.LOG_LEVEL,
@@ -48,6 +48,7 @@ def create_app():
     app.include_router(v1_router, prefix=settings.API_V1_PREFIX)
     app.include_router(v1_ws_router, prefix=settings.API_V1_PREFIX)
     app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
+    app.include_router(ai_router, prefix=settings.API_V1_PREFIX)
     exception_registry(app)
 
     return app
