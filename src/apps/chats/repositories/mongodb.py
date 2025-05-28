@@ -1,6 +1,7 @@
 import logging
 from uuid import UUID
 
+from apps.chats.exceptions import ChatNotFoundException, MessageNotFoundException
 from src.apps.chats.converters.chats import ChatConverter, MessageConverter
 from src.apps.chats.entities.chats import Chat, Message
 from src.apps.chats.models.chats import ChatModel, MessageModel
@@ -20,11 +21,21 @@ class MongoDBChatRepository(BaseChatRepository):
 
     async def get_chat(self, chat_id: UUID) -> Chat:
         logger.info('Retrieving chat with id \'%s\'', chat_id)
-        return self.converter.to_entity(await self.model.find_one(self.model.id == chat_id))
+        chat = await self.model.find_one(self.model.id == chat_id)
+        if chat is None:
+            logger.error('Chat with id \'%s\' not found', chat_id)
+            raise ChatNotFoundException(chat_id=chat_id)
+
+        return self.converter.to_entity(chat)
 
     async def delete_chat(self, chat_id: UUID) -> None:
         logger.info('Deleting chat with id \'%s\'', chat_id)
-        await self.model.find_one(self.model.id == chat_id).delete()
+        chat = await self.model.find_one(self.model.id == chat_id)
+        if chat is None:
+            logger.error('Chat with id \'%s\' not found', chat_id)
+            raise ChatNotFoundException(chat_id=chat_id)
+
+        await chat.delete()
 
 
 class MongoDBMessageRepository(BaseMessageRepository):
@@ -37,13 +48,28 @@ class MongoDBMessageRepository(BaseMessageRepository):
 
     async def get_message(self, message_id: UUID) -> Message:
         logger.info('Retrieving message with id \'%s\'', message_id)
-        return self.converter.to_entity(await self.model.find_one(self.model.id == message_id))
+        message = await self.model.find_one(self.model.id == message_id)
+        if message is None:
+            logger.error('Message with id \'%s\' not found', message_id)
+            raise MessageNotFoundException(message_id=message_id)
+
+        return self.converter.to_entity(message)
 
     async def get_chat_messages(self, chat_id: UUID) -> list[Message]:
         logger.info('Retrieving messages for chat with id \'%s\'', chat_id)
+        chat = await ChatModel.find_one(ChatModel.id == chat_id)
+        if chat is None:
+            logger.error('Chat with id \'%s\' not found', chat_id)
+            raise ChatNotFoundException(chat_id=chat_id)
+
         messages = await self.model.find(self.model.chat_id == chat_id).to_list()
         return [self.converter.to_entity(message) for message in messages]
 
     async def delete_message(self, message_id: UUID) -> None:
         logger.info('Deleting message with id \'%s\'', message_id)
-        await self.model.find_one(self.model.id == message_id).delete()
+        message = await self.model.find_one(self.model.id == message_id)
+        if message is None:
+            logger.error('Message with id \'%s\' not found', message_id)
+            raise MessageNotFoundException(message_id=message_id)
+
+        await message.delete()
