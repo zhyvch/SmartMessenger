@@ -30,6 +30,9 @@ SmartMessenger is a chat application backend that provides REST APIs for managin
 - `GET /messages/{message_id}` - Retrieve a message by ID
 - `DELETE /messages/{message_id}` - Delete a message by ID
 
+#### AI
+- `POST /ask` - Get an AI response to query
+
 ### WebSocket API
 - `WebSocket /{chat_id}` - Establish a real-time connection to a specific chat
 
@@ -99,6 +102,8 @@ SmartMessenger follows a clean architecture approach:
 src/
 ├── api/
 │   ├── main.py
+│   ├── AI
+│   │   └── openAI.py
 │   └── v1/
 │       ├── handlers.py
 │       └── websocket/
