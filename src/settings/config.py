@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,6 +8,8 @@ class Settings(BaseSettings):
     BASE_PATH: Path = Path(__file__).resolve().parent.parent.parent
 
     DOCKER_RUN: bool = False
+
+    APP_URL: str = "http://localhost:8000"
 
     API_HOST: str = '127.0.0.1'
     API_PORT: int = 8000
@@ -34,6 +35,13 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str
 
+    JWT_SECRET: str
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
+
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
 
     @property
     def POSTGRES_URL(self):

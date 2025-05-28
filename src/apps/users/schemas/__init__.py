@@ -1,4 +1,4 @@
-from .users import UserCreate, UserOut, Token, TokenPayload
+from .users import UserCreate, UserOut, Token, TokenRefresh
 
-__all__ = ["UserCreate", "UserOut", "Token", "TokenPayload"]
+__all__ = ["UserCreate", "UserOut", "Token", "TokenRefresh"]
 
