@@ -69,23 +69,17 @@ MONGODB_DB=chats_db
 
 ```
 
-3. Establishment of dependencies:
+3. Start the application:
 ```bash
-  pip install pdm
-  pdm install
+  make app
 ```
 
-4. Start the application:
-```bash
-  make app  
-```
-
-5. Check application logs:
+4. Check application logs:
 ```bash
   make app-logs
 ```
 
-6.  Stop the application:
+5. Stop the application:
 ```bash
   make app-down
 ```
