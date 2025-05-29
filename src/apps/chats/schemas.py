@@ -2,7 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from src.apps.chats.entities.chats import Chat, Message
+from src.apps.chats.entities import Chat, Message
 
 
 class CreateChatSchema(BaseModel):

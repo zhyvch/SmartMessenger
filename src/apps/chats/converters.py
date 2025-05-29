@@ -1,12 +1,18 @@
-from src.apps.chats.entities.chats import Chat as ChatEntity, Message as MessageEntity
-from src.apps.chats.models.chats import ChatModel, MessageModel
+from src.apps.chats.exceptions import (
+    IsNotChatEntityException,
+    IsNotChatModelException,
+    IsNotMessageEntityException,
+    IsNotMessageModelException
+)
+from src.apps.chats.entities import Chat as ChatEntity, Message as MessageEntity
+from src.apps.chats.models import ChatModel, MessageModel
 
 
 class ChatConverter:
     @classmethod
     def to_model(cls, chat: ChatEntity) -> ChatModel:
         if not isinstance(chat, ChatEntity):
-            raise Exception(f'Wrong type. Expected ChatEntity, got {type(chat)=}')
+            raise IsNotChatEntityException(gotten_type=type(chat).__name__)
 
         return ChatModel(
             id=chat.id,
@@ -18,9 +24,9 @@ class ChatConverter:
         )
 
     @classmethod
-    def to_entity(cls,chat: ChatModel) -> ChatEntity:
+    def to_entity(cls, chat: ChatModel) -> ChatEntity:
         if not isinstance(chat, ChatModel):
-            raise Exception(f'Wrong type. Expected ChatModel, got {type(chat)=}')
+            raise IsNotChatModelException(gotten_type=type(chat).__name__)
 
         return ChatEntity(
             id=chat.id,
@@ -36,7 +42,7 @@ class MessageConverter:
     @classmethod
     def to_model(cls, message: MessageEntity) -> MessageModel:
         if not isinstance(message, MessageEntity):
-            raise Exception(f'Wrong type. Expected MessageEntity, got {type(message)=}')
+            raise IsNotMessageEntityException(gotten_type=type(message).__name__)
 
         return MessageModel(
             id=message.id,
@@ -51,7 +57,7 @@ class MessageConverter:
     @classmethod
     def to_entity(cls, message: MessageModel) -> MessageEntity:
         if not isinstance(message, MessageModel):
-            raise Exception(f'Wrong type. Expected MessageModel, got {type(message)=}')
+            raise IsNotMessageModelException(gotten_type=type(message).__name__)
 
         return MessageEntity(
             id=message.id,

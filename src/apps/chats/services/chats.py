@@ -1,49 +1,12 @@
 import logging
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from uuid import UUID
 
-from src.api.v1.websocket.connections import ConnectionManager
-from src.apps.chats.entities.chats import Chat, Message
-from src.apps.chats.repositories.base import BaseChatRepository, BaseMessageRepository
-from src.apps.chats.repositories.mongodb import MongoDBChatRepository
-
+from src.apps.chats.entities import Chat, Message
+from src.apps.chats.services import BaseChatService
+from src.apps.chats.websocket.connections import ConnectionManager
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class BaseChatService(ABC):
-    chat_repo: BaseChatRepository
-    message_repo: BaseMessageRepository
-
-    @abstractmethod
-    async def create_chat(self, chat: Chat) -> None:
-        ...
-
-    @abstractmethod
-    async def get_chat(self, chat_id: UUID) -> Chat:
-        ...
-
-    @abstractmethod
-    async def delete_chat(self, chat_id: UUID) -> None:
-        ...
-
-    @abstractmethod
-    async def create_message(self, message: Message) -> None:
-        ...
-
-    @abstractmethod
-    async def get_message(self, message_id: UUID) -> Message:
-        ...
-
-    @abstractmethod
-    async def get_messages(self, chat_id: UUID) -> list[Message]:
-        ...
-
-    @abstractmethod
-    async def delete_message(self, message_id: UUID) -> None:
-        ...
 
 
 @dataclass

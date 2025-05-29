@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,7 +8,7 @@ class Settings(BaseSettings):
 
     DOCKER_RUN: bool = False
 
-    APP_URL: str = "http://localhost:8000"
+    APP_URL: str = "http://localhost:8000" #???
 
     API_HOST: str = '127.0.0.1'
     API_PORT: int = 8000
@@ -21,11 +20,11 @@ class Settings(BaseSettings):
     LOG_LEVEL: int = logging.WARNING  # one of logging.getLevelNamesMapping().values()
     LOG_FORMAT: str = '[%(asctime)s.%(msecs)03d] %(module)10s:%(lineno)-3d %(levelname)s - %(message)s'
 
-    PG_USER: str
-    PG_PASSWORD: str
-    PG_HOST: str
-    PG_PORT: int
-    PG_DATABASE: str
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_HOST: str
+    POSTGRES_PORT: int
+    POSTGRES_DB: str
 
     MONGODB_USER: str
     MONGODB_PASSWORD: str
@@ -35,22 +34,24 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str
 
-    JWT_SECRET: str
-    JWT_ALGORITHM: str = "HS256"
+    JWT_ALGORITHM: str = 'HS256'
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
 
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
 
+    OPENAI_API_KEY: str
+
     @property
-    def POSTGRES_URL(self):
+    def POSTGRES_URL(self) -> str:
         return (
-            f'postgresql+asyncpg://{self.PG_USER}:'
-            f'{self.PG_PASSWORD}@'
-            f'{self.PG_HOST}:'
-            f'{5432 if self.DOCKER_RUN else self.PG_PORT}/'
-            f'{self.PG_DATABASE}'
+            f'postgresql+asyncpg://'
+            f'{self.POSTGRES_USER}:'
+            f'{self.POSTGRES_PASSWORD}@'
+            f'{self.POSTGRES_HOST}:'
+            f'{5432 if self.DOCKER_RUN else self.POSTGRES_PORT}/'
+            f'{self.POSTGRES_DB}'
         )
 
     @property
