@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from pymongo.errors import PyMongoError
 from sqlalchemy.exc import SQLAlchemyError
 
-from apps.chats.exceptions import ChatNotFoundException, MessageNotFoundException, WrongTypeException
+from src.apps.chats.exceptions import ChatNotFoundException, MessageNotFoundException, WrongTypeException
 
 logger = logging.getLogger(__name__)
 

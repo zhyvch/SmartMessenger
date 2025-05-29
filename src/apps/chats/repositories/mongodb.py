@@ -1,17 +1,17 @@
 import logging
 from uuid import UUID
 
-from apps.chats.exceptions import ChatNotFoundException, MessageNotFoundException
-from src.apps.chats.converters.chats import ChatConverter, MessageConverter
-from src.apps.chats.entities.chats import Chat, Message
-from src.apps.chats.models.chats import ChatModel, MessageModel
-from src.apps.chats.repositories.base import BaseChatRepository, BaseMessageRepository
+from src.apps.chats.exceptions import ChatNotFoundException, MessageNotFoundException
+from src.apps.chats.converters import ChatConverter, MessageConverter
+from src.apps.chats.entities import Chat, Message
+from src.apps.chats.models import ChatModel, MessageModel
+from src.apps.chats.repositories import BaseChatRepository, BaseMessageRepository
 
 
 logger = logging.getLogger(__name__)
 
 
-class MongoDBChatRepository(BaseChatRepository):
+class BeanieChatRepository(BaseChatRepository):
     model = ChatModel
     converter = ChatConverter
 
@@ -38,7 +38,7 @@ class MongoDBChatRepository(BaseChatRepository):
         await chat.delete()
 
 
-class MongoDBMessageRepository(BaseMessageRepository):
+class BeanieMessageRepository(BaseMessageRepository):
     model = MessageModel
     converter = MessageConverter
 

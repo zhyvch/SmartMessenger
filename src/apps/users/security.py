@@ -1,18 +1,11 @@
-import os
-from datetime import datetime, timedelta
-from typing import Optional, Union
+from datetime import datetime, timedelta, timezone
 import uuid
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from src.settings.config import settings
 
-# Configuration
-SECRET_KEY = getattr(settings, "JWT_SECRET", os.getenv("JWT_SECRET", "changeme"))
-ALGORITHM = getattr(settings, "JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = getattr(settings, "ACCESS_TOKEN_EXPIRE_MINUTES", 60)
-REFRESH_TOKEN_EXPIRE_MINUTES = getattr(settings, "REFRESH_TOKEN_EXPIRE_MINUTES", 60 * 24 * 7)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 
 def hash_password(password: str) -> str:
@@ -24,45 +17,49 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 
 def _create_token(
-    subject: Union[str, int],
+    subject: str | int,
     token_type: str,
-    expires_delta: Optional[timedelta]
+    expires_delta: timedelta | None = None,
 ) -> str:
-    now = datetime.utcnow()
-    expire = now + (expires_delta or timedelta(
-        minutes=(ACCESS_TOKEN_EXPIRE_MINUTES if token_type == "access" else REFRESH_TOKEN_EXPIRE_MINUTES)
-    ))
+    now = datetime.now(tz=timezone.utc)
+    expire = now + (expires_delta or timedelta(minutes=(
+        settings.ACCESS_TOKEN_EXPIRE_MINUTES if token_type == 'access' else settings.REFRESH_TOKEN_EXPIRE_MINUTES
+    )))
     jti = str(uuid.uuid4())
     payload = {
-        "sub": str(subject),
-        "type": token_type,
-        "iat": now,
-        "exp": expire,
-        "jti": jti,
+        'sub': str(subject),
+        'type': token_type,
+        'iat': now,
+        'exp': expire,
+        'jti': jti,
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
 def create_access_token(
-    subject: Union[str, int],
-    expires_delta: Optional[timedelta] = None
-) -> str:
-    return _create_token(subject, token_type="access", expires_delta=expires_delta)
-
-
-def create_refresh_token(
-    subject: Union[str, int],
-    expires_delta: Optional[timedelta] = None
+    subject: str | int,
+    expires_delta: timedelta | None = None,
 ) -> str:
     return _create_token(
         subject,
-        token_type="refresh",
-        expires_delta=expires_delta or timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES),
+        token_type='access',
+        expires_delta=expires_delta
+    )
+
+
+def create_refresh_token(
+    subject: str | int,
+    expires_delta: timedelta | None = None,
+) -> str:
+    return _create_token(
+        subject,
+        token_type='refresh',
+        expires_delta=expires_delta,
     )
 
 
 def decode_token(token: str) -> dict:
     try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
     except JWTError as err:
         raise err

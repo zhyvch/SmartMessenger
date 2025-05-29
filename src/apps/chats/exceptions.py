@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from uuid import UUID
-from src.apps.chats.entities.chats import Chat as ChatEntity, Message as MessageEntity
-from src.apps.chats.models.chats import ChatModel, MessageModel
+from src.apps.chats.entities import Chat as ChatEntity, Message as MessageEntity
+from src.apps.chats.models import ChatModel, MessageModel
 
 
 @dataclass

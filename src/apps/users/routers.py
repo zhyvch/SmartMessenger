@@ -1,51 +1,62 @@
 from datetime import timedelta
 from fastapi import (
-    APIRouter, Depends, HTTPException,
-    status, BackgroundTasks, Request
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    BackgroundTasks,
+    Request,
 )
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from authlib.integrations.starlette_client import OAuth, OAuthError
 
-from src.database import get_db
-from src.apps.users.models.users import User, RevokedToken
+from src.apps.users.models import User, RevokedToken
+
+from src.apps.users.dependencies import SessionDep
 from src.apps.users.schemas.users import (
-    UserCreate, UserOut, Token, TokenRefresh,
+    UserCreate,
+    UserOut,
+    Token,
+    TokenRefresh,
 )
 from src.apps.users.security import (
-    hash_password, verify_password,
-    create_access_token, create_refresh_token,
-    _create_token, decode_token
+    hash_password,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    _create_token,
+    decode_token,
 )
+from src.apps.users.utils import send_email
 from src.settings.config import settings
 
-router = APIRouter(prefix="/auth", tags=["auth"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login")
+auth_router = APIRouter()
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f'{settings.API_V1_PREFIX}/auth/login')
 
 
-def get_current_user(
+async def get_current_user(
+    session: SessionDep,
     token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
 ) -> User:
     try:
         payload = decode_token(token)
-        if payload.get("type") != "access":
+        if payload.get('type') != 'access':
             raise ValueError()
-        user_id = int(payload["sub"])
+        user_id = int(payload['sub'])
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail='Invalid authentication credentials',
+            headers={'WWW-Authenticate': 'Bearer'},
         )
-    user = db.get(User, user_id)
+    user = await session.get(User, user_id)
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Inactive user",
+            detail='Inactive user',
         )
     return user
 
@@ -53,39 +64,36 @@ def get_current_user(
 # ─── Google OAuth ───────────────────────────────────────────────────────────────
 oauth = OAuth()
 oauth.register(
-    name="google",
+    name='google',
     client_id=settings.GOOGLE_CLIENT_ID,
     client_secret=settings.GOOGLE_CLIENT_SECRET,
-    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-    client_kwargs={"scope": "openid"},
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid'},
 )
-
-
-def send_email(to_email: str, subject: str, body: str):
-    print(f"[EMAIL] to={to_email}\nsubject={subject}\n{body}")
 
 
 # ─── Registration ──────────────────────────────────────────────────────────────
-@router.post(
-    "/register", response_model=UserOut,
-    status_code=status.HTTP_201_CREATED
+@auth_router.post(
+    '/register',
+    response_model=UserOut,
+    status_code=status.HTTP_201_CREATED,
 )
-def register(
+async def register(
     data: UserCreate,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
+    session: SessionDep,
 ):
     if not any([data.email, data.phone_number, data.username]):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provide email, phone number, or username",
+            detail='Provide email, phone number, or username',
         )
-    if data.email and db.query(User).filter_by(email=data.email).first():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Email already registered")
-    if data.phone_number and db.query(User).filter_by(phone_number=data.phone_number).first():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Phone number already registered")
-    if data.username and db.query(User).filter_by(username=data.username).first():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Username already taken")
+    if data.email and await session.query(User).filter_by(email=data.email).first():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, 'Email already registered')
+    if data.phone_number and await session.query(User).filter_by(phone_number=data.phone_number).first():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, 'Phone number already registered')
+    if data.username and await session.query(User).filter_by(username=data.username).first():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, 'Username already taken')
 
     user = User(
         first_name=data.first_name,
@@ -97,59 +105,61 @@ def register(
         is_active=True,
         email_verified=False,
     )
-    db.add(user); db.commit(); db.refresh(user)
+    await session.add(user)
+    await session.commit()
+    await session.refresh(user)
 
     if data.email:
         token = _create_token(
             subject=user.id,
-            token_type="verify",
+            token_type='verify',
             expires_delta=timedelta(hours=24),
         )
-        link = f"{settings.APP_URL}/auth/verify-email?token={token}"
+        link = f'{settings.APP_URL}/auth/verify-email?token={token}'
         background_tasks.add_task(
             send_email,
             user.email,
-            "Verify your email",
-            f"Click here to verify your address:\n{link}"
+            'Verify your email',
+            f'Click here to verify your address:\n{link}'
         )
 
     return user
 
 
 # ─── Email verification ────────────────────────────────────────────────────────
-@router.get("/verify-email")
-def verify_email(
+@auth_router.get('/verify-email')
+async def verify_email(
     token: str,
-    db: Session = Depends(get_db),
+    session: SessionDep,
 ):
     try:
         payload = decode_token(token)
-        if payload.get("type") != "verify":
+        if payload.get('type') != 'verify':
             raise ValueError()
-        user_id = int(payload["sub"])
+        user_id = int(payload['sub'])
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification token",
+            detail='Invalid or expired verification token',
         )
-    user = db.get(User, user_id)
+    user = await session.get(User, user_id)
     if not user:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, 'User not found')
     if user.email_verified:
-        return {"message": "Email already verified"}
+        return {'message': 'Email already verified'}
     user.email_verified = True
-    db.commit()
-    return {"message": "Email verified successfully"}
+    await session.commit()
+    return {'message': 'Email verified successfully'}
 
 
 # ─── Login ──────────────────────────────────────────────────────────────────────
-@router.post("/login", response_model=Token)
-def login(
+@auth_router.post('/login', response_model=Token)
+async def login(
+    session: SessionDep,
     form: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
 ):
     identifier = form.username
-    user = db.query(User).filter(
+    user = await session.query(User).filter(
         or_(
             User.email == identifier,
             User.phone_number == identifier,
@@ -159,123 +169,125 @@ def login(
     if not user or not verify_password(form.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail='Invalid credentials',
+            headers={'WWW-Authenticate': 'Bearer'},
         )
     if not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email not verified",
+            detail='Email not verified',
         )
     access = create_access_token(user.id)
     refresh = create_refresh_token(user.id)
-    return Token(access_token=access, refresh_token=refresh, token_type="bearer")
+    return Token(access_token=access, refresh_token=refresh, token_type='bearer')
 
 
 # ─── Refresh JWTs ───────────────────────────────────────────────────────────────
-@router.post("/refresh", response_model=Token)
-def refresh_token(
+@auth_router.post('/refresh', response_model=Token)
+async def refresh_token(
     payload: TokenRefresh,
-    db: Session = Depends(get_db),
+    session: SessionDep,
 ):
     try:
         data = decode_token(payload.refresh_token)
-        if data.get("type") != "refresh":
+        if data.get('type') != 'refresh':
             raise ValueError()
-        jti = data.get("jti")
-        user_id = int(data["sub"])
+        jti = data.get('jti')
+        user_id = int(data['sub'])
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
+            detail='Invalid refresh token',
         )
-    if db.query(RevokedToken).filter_by(jti=jti).first():
+    if await session.query(RevokedToken).filter_by(jti=jti).first():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has been revoked",
+            detail='Token has been revoked',
         )
-    user = db.get(User, user_id)
+    user = await session.get(User, user_id)
     if not user:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, 'User not found')
     access = create_access_token(user.id)
     refresh = create_refresh_token(user.id)
-    return Token(access_token=access, refresh_token=refresh, token_type="bearer")
+    return Token(access_token=access, refresh_token=refresh, token_type='bearer')
 
 
 # ─── Logout ─────────────────────────────────────────────────────────────────────
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(
+@auth_router.post('/logout', status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
     payload: TokenRefresh,
-    db: Session = Depends(get_db),
+    session: SessionDep,
 ):
     try:
         data = decode_token(payload.refresh_token)
-        if data.get("type") != "refresh":
+        if data.get('type') != 'refresh':
             raise ValueError()
-        jti = data.get("jti")
-        user_id = int(data.get("sub"))
+        jti = data.get('jti')
+        user_id = int(data.get('sub'))
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
+            detail='Invalid refresh token',
         )
 
     revoked = RevokedToken(
         jti=jti,
-        expires_at=data.get("exp"),
+        expires_at=data.get('exp'),
         user_id=user_id,
     )
-    db.add(revoked)
-    db.commit()
+    await session.add(revoked)
+    await session.commit()
 
 
 # ─── Delete account ────────────────────────────────────────────────────────────
-@router.delete("/users/me", status_code=status.HTTP_204_NO_CONTENT)
-def delete_account(
+@auth_router.delete('/users/me', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_account(
+    session: SessionDep,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
-    db.delete(user); db.commit()
+    await session.delete(user)
+    await session.commit()
 
 
 # ─── Google OAuth login/callback ────────────────────────────────────────────────
-@router.get("/oauth/google/login")
+@auth_router.get('/oauth/google/login')
 async def oauth_google_login(
     request: Request
 ):
-    redirect_uri = request.url_for("oauth_google_callback")
+    redirect_uri = request.url_for('oauth_google_callback')
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
-@router.get("/oauth/google/callback", response_model=Token)
+@auth_router.get('/oauth/google/callback', response_model=Token)
 async def oauth_google_callback(
     request: Request,
-    db: Session = Depends(get_db),
+    session: SessionDep,
 ):
     try:
         token = await oauth.google.authorize_access_token(request)
     except OAuthError as e:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"OAuth error: {e.error}")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f'OAuth error: {e.error}')
 
-    if "id_token" in token:
+    if 'id_token' in token:
         user_info = await oauth.google.parse_id_token(request, token)
     else:
-        resp = await oauth.google.get("userinfo", token=token)
+        resp = await oauth.google.get('userinfo', token=token)
         resp.raise_for_status()
         user_info = resp.json()
 
-    social_id = user_info["sub"]
-    email = user_info.get("email")
-    name = user_info.get("name", "")
-    first_name, *rest = name.split(" ")
-    last_name = " ".join(rest) if rest else ""
+    social_id = user_info['sub']
+    email = user_info.get('email')
+    name = user_info.get('name', '')
+    first_name, *rest = name.split(' ')
+    last_name = ' '.join(rest) if rest else ''
 
-    user = db.query(User).filter_by(google_id=social_id).first()
+    user = await session.query(User).filter_by(google_id=social_id).first()
     if not user and email:
-        user = db.query(User).filter_by(email=email).first()
+        user = await session.query(User).filter_by(email=email).first()
         if user:
             user.google_id = social_id
-            db.commit(); db.refresh(user)
+            await session.commit()
+            await session.refresh(user)
     if not user:
         user = User(
             first_name=first_name,
@@ -288,8 +300,10 @@ async def oauth_google_callback(
             email_verified=True,
             google_id=social_id,
         )
-        db.add(user); db.commit(); db.refresh(user)
+        await session.add(user)
+        await session.commit()
+        await session.refresh(user)
 
     access = create_access_token(user.id)
     refresh = create_refresh_token(user.id)
-    return Token(access_token=access, refresh_token=refresh, token_type="bearer")
+    return Token(access_token=access, refresh_token=refresh, token_type='bearer')

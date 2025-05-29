@@ -1,7 +1,11 @@
-from apps.chats.exceptions import IsNotChatEntityException, IsNotChatModelException, IsNotMessageEntityException, \
+from src.apps.chats.exceptions import (
+    IsNotChatEntityException,
+    IsNotChatModelException,
+    IsNotMessageEntityException,
     IsNotMessageModelException
-from src.apps.chats.entities.chats import Chat as ChatEntity, Message as MessageEntity
-from src.apps.chats.models.chats import ChatModel, MessageModel
+)
+from src.apps.chats.entities import Chat as ChatEntity, Message as MessageEntity
+from src.apps.chats.models import ChatModel, MessageModel
 
 
 class ChatConverter:

@@ -1,12 +1,18 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from uuid import UUID
 
 from src.apps.chats.entities import Chat, Message
+from src.apps.chats.repositories import BaseChatRepository, BaseMessageRepository
 
 
-class BaseChatRepository(ABC):
+@dataclass
+class BaseChatService(ABC):
+    chat_repo: BaseChatRepository
+    message_repo: BaseMessageRepository
+
     @abstractmethod
-    async def add_chat(self, chat: Chat) -> None:
+    async def create_chat(self, chat: Chat) -> None:
         ...
 
     @abstractmethod
@@ -17,10 +23,8 @@ class BaseChatRepository(ABC):
     async def delete_chat(self, chat_id: UUID) -> None:
         ...
 
-
-class BaseMessageRepository(ABC):
     @abstractmethod
-    async def add_message(self, message: Message) -> None:
+    async def create_message(self, message: Message) -> None:
         ...
 
     @abstractmethod
@@ -28,7 +32,7 @@ class BaseMessageRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_chat_messages(self, chat_id: UUID) -> list[Message]:
+    async def get_messages(self, chat_id: UUID) -> list[Message]:
         ...
 
     @abstractmethod

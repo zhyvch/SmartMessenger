@@ -1,15 +1,15 @@
-import logging
 from uuid import UUID
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from src.api.v1.dependencies import ConnectionManagerDep
-
-logger = logging.getLogger(__name__)
-router = APIRouter()
+from src.apps.chats.dependencies import ConnectionManagerDep
 
 
-@router.websocket('/{chat_id}')
+chats_ws_router = APIRouter()
+
+
+@chats_ws_router.websocket('/{chat_id}')
 async def websocket_endpoint(
     websocket: WebSocket,
     chat_id: UUID,
