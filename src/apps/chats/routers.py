@@ -3,7 +3,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, status
 
-from src.api.schemas import ErrorSchema
 from src.apps.chats.dependencies import ChatServiceDep
 from src.apps.chats.entities import Chat, Message, ChatWithMessages
 from src.apps.chats.schemas import CreateChatSchema, CreateMessageSchema
@@ -18,9 +17,6 @@ messages_router = APIRouter()
     '/',
     description='Creates a new chat.',
     status_code=status.HTTP_201_CREATED,
-    responses={
-        status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema},
-    },
 )
 async def create_chat(
     schema: CreateChatSchema,
@@ -35,10 +31,6 @@ async def create_chat(
     '/{chat_id}',
     description='Retrieves a chat by its ID.',
     status_code=status.HTTP_200_OK,
-    responses={
-        status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema},
-        status.HTTP_404_NOT_FOUND: {'model': ErrorSchema},
-    },
 )
 async def get_chat(
     chat_id: UUID,
@@ -51,10 +43,6 @@ async def get_chat(
     '/{chat_id}',
     description='Deletes a chat by its ID.',
     status_code=status.HTTP_200_OK,
-    responses={
-        status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema},
-        status.HTTP_404_NOT_FOUND: {'model': ErrorSchema},
-    },
 )
 async def delete_chat(
     chat_id: UUID,
@@ -68,10 +56,6 @@ async def delete_chat(
     '/{chat_id}/messages',
     description='Retrieves all messages for a chat.',
     status_code=status.HTTP_200_OK,
-    responses={
-        status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema},
-        status.HTTP_404_NOT_FOUND: {'model': ErrorSchema},
-    },
 )
 async def get_chat_messages(
     chat_id: UUID,
@@ -87,10 +71,6 @@ async def get_chat_messages(
     '/',
     description='Adds a new message to a chat.',
     status_code=status.HTTP_201_CREATED,
-    responses={
-        status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema},
-        status.HTTP_404_NOT_FOUND: {'model': ErrorSchema},
-    },
 )
 async def create_message(
     schema: CreateMessageSchema,
@@ -105,10 +85,6 @@ async def create_message(
     '/{message_id}',
     description='Retrieves a message by its ID.',
     status_code=status.HTTP_200_OK,
-    responses={
-        status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema},
-        status.HTTP_404_NOT_FOUND: {'model': ErrorSchema},
-    },
 )
 async def get_message(
     message_id: UUID,
@@ -121,10 +97,6 @@ async def get_message(
     '/{message_id}',
     description='Deletes a message by its ID.',
     status_code=status.HTTP_200_OK,
-    responses={
-        status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema},
-        status.HTTP_404_NOT_FOUND: {'model': ErrorSchema},
-    },
 )
 async def delete_message(
     message_id: UUID,

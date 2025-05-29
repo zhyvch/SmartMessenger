@@ -12,7 +12,7 @@ int_pk = Annotated[int, mapped_column(Integer, primary_key=True, index=True)]
 class User(Base):
     __tablename__ = 'users'
 
-    id = Mapped[int_pk]
+    id: Mapped[int_pk]
     first_name: Mapped[str] = mapped_column(String(255), nullable=False)
     last_name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True)
@@ -37,7 +37,7 @@ class User(Base):
 class RevokedToken(Base):
     __tablename__ = 'revoked_tokens'
 
-    id = Mapped[int_pk]
+    id: Mapped[int_pk]
     jti: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     expires_at: Mapped[int] = mapped_column(Integer, nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), nullable=False)

@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from src.api.exception_handlers import exception_registry
 
-from src.databases import init_mongo, init_postgres
+from src.databases import init_mongo
 from src.settings.config import settings
 from src.api.v1.routers import v1_router, v1_ws_router
 
@@ -20,7 +20,6 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_mongo()
-    await init_postgres()
     yield
     ...
 
@@ -33,7 +32,6 @@ def create_app():
         debug=settings.DEBUG,
         lifespan=lifespan,
     )
-
 
     app.add_middleware(
         SessionMiddleware,

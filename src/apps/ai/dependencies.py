@@ -1,6 +1,7 @@
+from typing import Annotated
+
 from fastapi import Depends
 from openai import OpenAI
-from sqlalchemy.sql.annotation import Annotated
 
 from src.apps.ai.services import OpenAIService
 from src.settings.config import settings
