@@ -14,7 +14,7 @@ from authlib.integrations.starlette_client import OAuth, OAuthError
 from src.apps.users.models import User, RevokedToken
 
 from src.apps.users.dependencies import SessionDep
-from src.apps.users.schemas.users import (
+from src.apps.users.schemas import (
     UserCreate,
     UserOut,
     Token,

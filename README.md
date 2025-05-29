@@ -9,6 +9,7 @@
 - ![MongoDB](https://img.shields.io/badge/-MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white) **MongoDB**
 - ![Docker](https://img.shields.io/badge/-Docker-2496ED?style=flat-square&logo=docker&logoColor=white) **Docker**
 - ![Docker Compose](https://img.shields.io/badge/-Docker%20Compose-2496ED?style=flat-square&logo=docker&logoColor=white) **Docker Compose**
+- ![UV](https://img.shields.io/badge/-UV-4B32C3?style=flat-square&logo=python&logoColor=white) **UV** (Python package installer)
 - ![Uvicorn](https://img.shields.io/badge/-Uvicorn-009688?style=flat-square&logo=python&logoColor=white) **Uvicorn**
 
 ## 📋 Project Overview
@@ -31,10 +32,20 @@ SmartMessenger is a chat application backend that provides REST APIs for managin
 - `DELETE /messages/{message_id}` - Delete a message by ID
 
 #### AI
-- `POST /ask` - Get an AI response to query
+- `POST /ai/ask` - Get an AI response to a user query
+
+#### Authentication (Розділити auth і users на різні роутери)
+- `POST /auth/register` - Register a new user
+- `GET /auth/verify-email` - Verify user email
+- `POST /auth/login` - Login and get tokens
+- `POST /auth/refresh` - Refresh access token
+- `POST /auth/logout` - Logout and revoke token
+- `DELETE /auth/users/me` - Delete user account
+- `GET /auth/oauth/google/login` - Login with Google
+- `GET /auth/oauth/google/callback` - Google OAuth callback
 
 ### WebSocket API
-- `WebSocket /{chat_id}` - Establish a real-time connection to a specific chat
+- `WebSocket /chats/{chat_id}` - Establish a real-time connection to a specific chat
 
 ## 🚀 Getting Started
 
@@ -46,8 +57,8 @@ SmartMessenger is a chat application backend that provides REST APIs for managin
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/SmartMessenger.git
-cd SmartMessenger
+    git clone https://github.com/your-username/SmartMessenger.git
+    cd SmartMessenger
 ```
 
 2. Create a `.env` file with the required environment variables:
@@ -56,19 +67,27 @@ DOCKER_RUN=true
 
 API_HOST=127.0.0.1
 API_PORT=8000
-DEBUG=True
 
-PG_USER=root
-PG_PASSWORD=1234
-PG_HOST=smart_messenger_postgres # Change to 127.0.0.1 if run locally without docker
-PG_PORT=5672
-PG_DATABASE=users_db
+DEBUG=true
+
+POSTGRES_USER=root
+POSTGRES_PASSWORD=1234
+POSTGRES_HOST=smart_messenger_postgres # Change to 127.0.0.1 if run locally without docker
+POSTGRES_PORT=5672
+POSTGRES_DB=users_db
 
 MONGODB_USER=admin
 MONGODB_PASSWORD=admin
 MONGODB_HOST=smart_messenger_mongodb # Change to 127.0.0.1 if run locally without docker
 MONGODB_PORT=27017
 MONGODB_DB=chats_db
+
+SECRET_KEY=my_super_secret_key
+
+GOOGLE_CLIENT_ID=???
+GOOGLE_CLIENT_SECRET=???
+
+OPENAI_API_KEY=my_super_secret_openai_ai_key
 
 ```
 
@@ -77,15 +96,19 @@ MONGODB_DB=chats_db
   make app
 ```
 
-4. Check application logs:
+4. Migrate the database:
 ```bash
-  make app-logs
+  make revision-upgrade
 ```
 
-5. Stop the application:
-```bash
-  make app-down
-```
+## 🛠️ Makefile Commands
+
+- `make app` - Start the application with Docker Compose
+- `make app-down` - Stop the application and remove containers
+- `make app-logs` - View application logs in real-time
+- `make auto-revision` - Generate Alembic migration from model changes
+- `make revision-upgrade` - Apply Alembic migrations to the database
+- `make revision-downgrade` - Revert the last Alembic migration
 
 ## 🏗️ Architecture
 
@@ -102,28 +125,47 @@ SmartMessenger follows a clean architecture approach:
 src/
 ├── api/
 │   ├── main.py
-│   ├── AI
-│   │   └── openAI.py
+│   ├── exception_handlers.py
 │   └── v1/
-│       ├── handlers.py
+│       ├── routers.py
 │       └── websocket/
-│           └── handlers.py
+│           └── routers.py
 ├── apps/
+│   ├── ai/
+│   │   ├── dependencies.py
+│   │   ├── prompts.py
+│   │   ├── routers.py
+│   │   ├── schemas.py
+│   │   └── services.py
 │   ├── chats/
-│   │   ├── converters/
-│   │   ├── entities/
-│   │   ├── models/
 │   │   ├── repositories/
-│   │   ├── schemas/
-│   │   └── services/
+│   │   │   ├── base.py
+│   │   │   └── mongodb.py
+│   │   ├── services/
+│   │   │   ├── base.py
+│   │   │   └── chats.py
+│   │   ├── websocket/
+│   │   │   ├── connections.py
+│   │   │   └── routers.py
+│   │   ├── converters.py
+│   │   ├── converters.py
+│   │   ├── dependencies.py
+│   │   ├── entities.py
+│   │   ├── exceptions.py
+│   │   ├── models.py
+│   │   ├── routers.py
+│   │   └── schemas.py
 │   └── users/
-│       ├── 
-│       ├── 
-│       ├── 
-│       ├── 
-│       ├── 
-│       └── 
-
+│       ├── dependencies.py
+│       ├── models.py
+│       ├── routers.py
+│       ├── schemas.py
+│       ├── security.py
+│       └── utils.py
+├── migrations/
+├── settings/
+│   └── config.py
+└── databases.py
 ```
 
 ## 🐳 Docker Compose Services
@@ -131,7 +173,6 @@ src/
 - **smart_messenger**: Main API service running FastAPI
 - **smart_messenger_postgres**: PostgreSQL database for structured data
 - **smart_messenger_mongodb**: MongoDB database for chat messages
-
 
 ## 👥 Contributing
 
