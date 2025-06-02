@@ -1,7 +1,13 @@
 from datetime import datetime, timedelta, timezone
 import uuid
+from typing import Optional
+
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.apps.users.models import User
 from src.settings.config import settings
 
 
@@ -63,3 +69,49 @@ def decode_token(token: str) -> dict:
         return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
     except JWTError as err:
         raise err
+
+
+async def get_or_create_user(
+    session: AsyncSession,
+    *,
+    google_id: str,
+    email: str,
+    name: Optional[str] = None,
+) -> User:
+
+    result = await session.execute(
+        select(User).where(User.google_id == google_id)
+    )
+    user = result.scalars().first()
+    if user:
+        return user
+
+    result = await session.execute(
+        select(User).where(User.email == email)
+    )
+    user = result.scalars().first()
+    if user:
+        user.google_id = google_id
+        await session.commit()
+        await session.refresh(user)
+        return user
+
+    first_name = ""
+    last_name = ""
+    if name:
+        parts = name.strip().split(" ", 1)
+        first_name = parts[0]
+        if len(parts) > 1:
+            last_name = parts[1]
+
+    new_user = User(
+        email=email,
+        google_id=google_id,
+        first_name=first_name,
+        last_name=last_name,
+        is_active=True,
+    )
+    session.add(new_user)
+    await session.commit()
+    await session.refresh(new_user)
+    return new_user
