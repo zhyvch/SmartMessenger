@@ -2,11 +2,12 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.api.exception_handlers import exception_registry
 
-from src.databases import init_mongo
+from src.databases import init_mongo, init_postgres
 from src.settings.config import settings
 from src.api.v1.routers import v1_router, v1_ws_router
 
@@ -20,6 +21,7 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_mongo()
+    await init_postgres()
     yield
     ...
 
@@ -31,6 +33,7 @@ def create_app():
         docs_url=settings.API_DOCS_URL,
         debug=settings.DEBUG,
         lifespan=lifespan,
+        servers=[{"url": f"http://localhost:{settings.API_PORT}"}],
     )
 
     app.add_middleware(
@@ -39,6 +42,13 @@ def create_app():
         session_cookie='session',
         max_age=3600,
         same_site='lax',
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # або ["http://localhost:8000"]
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     app.include_router(v1_router, prefix=settings.API_V1_PREFIX)
