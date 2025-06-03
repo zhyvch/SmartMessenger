@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from pydantic import EmailStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -42,6 +43,15 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
 
     OPENAI_API_KEY: str
+
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+    MAIL_FROM: EmailStr
+    MAIL_PORT: int = 587
+    MAIL_SERVER: str
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
+    MAIL_FROM_NAME: str = "SmartMessenger"
 
     @property
     def POSTGRES_URL(self) -> str:
