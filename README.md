@@ -82,13 +82,21 @@ MONGODB_HOST=smart_messenger_mongodb # Change to 127.0.0.1 if run locally withou
 MONGODB_PORT=27017
 MONGODB_DB=chats_db
 
-SECRET_KEY=my_super_secret_key
+SECRET_KEY=secret_key_example
 
-GOOGLE_CLIENT_ID=???
-GOOGLE_CLIENT_SECRET=???
+GOOGLE_CLIENT_ID=google_client_id_example
+GOOGLE_CLIENT_SECRET=google_client_secret_example
 
-OPENAI_API_KEY=my_super_secret_openai_ai_key
+OPENAI_API_KEY=openai_api_key_example
 
+MAIL_USERNAME=your_email_adress
+MAIL_PASSWORD=generated+password_by_google
+MAIL_FROM=no-reply@gmail.com
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_STARTTLS=True
+MAIL_SSL_TLS=False
+MAIL_FROM_NAME="Smart Messenger"
 ```
 
 3. Start the application:
