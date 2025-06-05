@@ -24,7 +24,7 @@ async def send_friend_request(
 
 
     user_query = select(User).where(User.username == data.to_username)
-    to_user = (await session.execute(q)).scalars().first()
+    to_user = (await session.execute(user_query)).scalars().first()
 
     if not to_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -36,7 +36,7 @@ async def send_friend_request(
             and_(FriendRequest.from_user_id == to_user.id, FriendRequest.to_user_id == current_user.id),
         )
     )
-    existing = (await session.execute(q)).scalars().first()
+    existing = (await session.execute(user_query)).scalars().first()
     if existing:
         if existing.status == FriendRequestStatus.pending:
             raise HTTPException(status_code=400, detail="Friend request already pending")
@@ -128,7 +128,7 @@ async def get_friends(
     FriendRequest.status == FriendRequestStatus.accepted
     )
 
-    results = await session.execute(q)
+    results = await session.execute(user_query)
     friend_requests = results.scalars().all()
 
     friend_ids = []
@@ -141,6 +141,6 @@ async def get_friends(
 
 
     user_query = select(User).where(User.id.in_(friend_ids))
-    friends_result = await session.execute(q)
+    friends_result = await session.execute(user_query)
     friends = friends_result.scalars().all()
     return friends
