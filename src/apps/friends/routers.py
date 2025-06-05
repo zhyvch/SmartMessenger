@@ -118,7 +118,7 @@ async def delete_friend_request(
 
 
 #my friends list
-@friend_router.get("/friends", response_model=list[UserOut])
+@friend_router.get("/list", response_model=list[UserOut])
 async def get_friends(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_db),
