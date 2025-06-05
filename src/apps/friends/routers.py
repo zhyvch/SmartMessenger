@@ -1,140 +1,146 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, or_
+from fastapi import APIRouter, Depends, status, HTTPException
+from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
-
-#from src.databases import get_db
-from src.apps.users.schemas import UserOut
-from src.apps.users.routers import get_current_user
+from src.apps.friends.schemas import FriendRequestCreate, FriendRequestStatus, FriendRequestOut
+from src.apps.friends.models import FriendRequest
 from src.apps.users.models import User
-from apps.friends.models import FriendRequest, Friend, RequestStatus
-from apps.friends.schemas import FriendRequestCreate, FriendRequestResponse
+from src.apps.users.schemas import UserOut
+from src.databases import get_async_db
+from src.apps.users.routers import get_current_user
 
-router = APIRouter(prefix="/friends_router", tags=["Friends"])
+
+friend_router = APIRouter()
 
 
-@router.post("/request", response_model=FriendRequestResponse)
+#send a friend request
+@friend_router.post("/requests", response_model=FriendRequestOut, status_code=status.HTTP_201_CREATED)
 async def send_friend_request(
-    request: FriendRequestCreate,
-    db: AsyncSession = Depends(get_db),
+    data: FriendRequestCreate,
     current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
-    if current_user.id == request.receiver_id:
-        raise HTTPException(status_code=400, detail="Неможливо надіслати запит самому собі")
+    if data.to_username == current_user.username:
+        raise HTTPException(status_code=400, detail="Cannot send friend request to yourself")
 
-    stmt = select(FriendRequest).where(
+
+    user_query = select(User).where(User.username == data.to_username)
+    to_user = (await session.execute(q)).scalars().first()
+
+    if not to_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+
+    user_query = select(FriendRequest).where(
         or_(
-            (FriendRequest.sender_id == current_user.id) & (FriendRequest.receiver_id == request.receiver_id),
-            (FriendRequest.sender_id == request.receiver_id) & (FriendRequest.receiver_id == current_user.id)
+            and_(FriendRequest.from_user_id == current_user.id, FriendRequest.to_user_id == to_user.id),
+            and_(FriendRequest.from_user_id == to_user.id, FriendRequest.to_user_id == current_user.id),
         )
     )
-    result = await db.execute(stmt)
-    existing = result.scalars().first()
+    existing = (await session.execute(q)).scalars().first()
     if existing:
-        raise HTTPException(status_code=400, detail="Запит уже існує або очікує відповіді")
+        if existing.status == FriendRequestStatus.pending:
+            raise HTTPException(status_code=400, detail="Friend request already pending")
+        elif existing.status == FriendRequestStatus.accepted:
+            raise HTTPException(status_code=400, detail="You are already friends")
+
 
     friend_request = FriendRequest(
-        sender_id=current_user.id,
-        receiver_id=request.receiver_id,
-        status=RequestStatus.pending
+        from_user_id=current_user.id,
+        to_user_id=to_user.id,
+        status=FriendRequestStatus.pending,
     )
-    db.add(friend_request)
-    await db.commit()
-    await db.refresh(friend_request)
-
+    session.add(friend_request)
+    await session.commit()
+    await session.refresh(friend_request)
     return friend_request
 
 
-@router.post("/accept/{request_id}", response_model=dict)
+#accept request
+@friend_router.post("/requests/{request_id}/accept", response_model=FriendRequestOut)
 async def accept_friend_request(
     request_id: int,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
-    stmt = select(FriendRequest).where(FriendRequest.id == request_id)
-    result = await db.execute(stmt)
-    friend_request = result.scalars().first()
+    friend_request = await session.get(FriendRequest, request_id)
+    if not friend_request or friend_request.to_user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Friend request not found")
 
-    if not friend_request:
-        raise HTTPException(status_code=404, detail="Запит не знайдено")
-    if friend_request.receiver_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Це не ваш запит")
-    if friend_request.status != RequestStatus.pending:
-        raise HTTPException(status_code=400, detail="Запит вже оброблено")
+    if friend_request.status != FriendRequestStatus.pending:
+        raise HTTPException(status_code=400, detail="Friend request is not pending")
 
-    # Оновлюємо статус
-    friend_request.status = RequestStatus.accepted
-
-    # Додаємо обох у friends
-    db.add_all([
-        Friend(user_id=friend_request.sender_id, friend_id=friend_request.receiver_id),
-        Friend(user_id=friend_request.receiver_id, friend_id=friend_request.sender_id),
-    ])
-
-    await db.commit()
-
-    return {"detail": "Запит прийнято та збережено в друзях"}
+    friend_request.status = FriendRequestStatus.accepted
+    await session.commit()
+    await session.refresh(friend_request)
+    return friend_request
 
 
-@router.delete("/reject/{request_id}", response_model=dict)
+
+#decline request
+@friend_router.post("/requests/{request_id}/decline", response_model=FriendRequestOut)
 async def reject_friend_request(
     request_id: int,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
-    stmt = select(FriendRequest).where(FriendRequest.id == request_id)
-    result = await db.execute(stmt)
-    friend_request = result.scalars().first()
+    friend_request = await session.get(FriendRequest, request_id)
+    if not friend_request or friend_request.to_user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Friend request not found")
 
+    if friend_request.status != FriendRequestStatus.pending:
+        raise HTTPException(status_code=400, detail="Friend request is not pending")
+
+    friend_request.status = FriendRequestStatus.declined
+    await session.commit()
+    await session.refresh(friend_request)
+    return friend_request
+
+
+
+
+#delete from friends
+@friend_router.delete("/requests/{request_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_friend_request(
+    request_id: int,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
+):
+    friend_request = await session.get(FriendRequest, request_id)
     if not friend_request:
-        raise HTTPException(status_code=404, detail="Запит не знайдено")
-    if current_user.id not in [friend_request.sender_id, friend_request.receiver_id]:
-        raise HTTPException(status_code=403, detail="Ви не маєте прав на цю дію")
+        raise HTTPException(status_code=404, detail="Friend request not found")
 
-    await db.delete(friend_request)
-    await db.commit()
+    if current_user.id not in [friend_request.from_user_id, friend_request.to_user_id]:
+        raise HTTPException(status_code=403, detail="Not allowed to delete this friend request")
 
-    return {"detail": "Запит видалено"}
+    await session.delete(friend_request)
+    await session.commit()
 
 
-@router.get("/incoming", response_model=List[FriendRequestResponse])
-async def get_incoming_friend_requests(
-    db: AsyncSession = Depends(get_db),
+
+#my friends list
+@friend_router.get("/friends", response_model=list[UserOut])
+async def get_friends(
     current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_db),
 ):
-    stmt = select(FriendRequest).where(
-        FriendRequest.receiver_id == current_user.id,
-        FriendRequest.status == RequestStatus.pending
+
+    user_query = select(FriendRequest).where(or_(FriendRequest.from_user_id == current_user.id,FriendRequest.to_user_id == current_user.id),
+    FriendRequest.status == FriendRequestStatus.accepted
     )
-    result = await db.execute(stmt)
-    return result.scalars().all()
 
+    results = await session.execute(q)
+    friend_requests = results.scalars().all()
 
-@router.get("/outgoing", response_model=List[FriendRequestResponse])
-async def get_outgoing_friend_requests(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    stmt = select(FriendRequest).where(
-        FriendRequest.sender_id == current_user.id,
-        FriendRequest.status == RequestStatus.pending
-    )
-    result = await db.execute(stmt)
-    return result.scalars().all()
-
-
-@router.get("/list", response_model=List[UserOut])
-async def get_all_friends(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    stmt = select(Friend.friend_id).where(Friend.user_id == current_user.id)
-    result = await db.execute(stmt)
-    friend_ids = [row[0] for row in result.all()]
+    friend_ids = []
+    for fr in friend_requests:
+        friend_id = fr.to_user_id if fr.from_user_id == current_user.id else fr.from_user_id
+        friend_ids.append(friend_id)
 
     if not friend_ids:
         return []
 
-    stmt = select(User).where(User.id.in_(friend_ids))
-    result = await db.execute(stmt)
-    return result.scalars().all()
+
+    user_query = select(User).where(User.id.in_(friend_ids))
+    friends_result = await session.execute(q)
+    friends = friends_result.scalars().all()
+    return friends

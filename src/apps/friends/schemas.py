@@ -1,22 +1,15 @@
 from pydantic import BaseModel
-from enum import Enum
-
-
-class FriendRequestStatusEnum(str, Enum):
-    pending = "pending"
-    accepted = "accepted"
-    rejected = "rejected"
-
+from src.apps.friends.models import FriendRequestStatus
 
 class FriendRequestCreate(BaseModel):
-    receiver_id: int
+    to_username: str
 
-
-class FriendRequestResponse(BaseModel):
+class FriendRequestOut(BaseModel):
     id: int
-    sender_id: int
-    receiver_id: int
-    status: FriendRequestStatusEnum
+    from_user_id: int
+    to_user_id: int
+    status: FriendRequestStatus
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }

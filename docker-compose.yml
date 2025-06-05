@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: smart_messenger
     env_file:
-      - .env
+      - .env.example
     ports:
       - '${API_PORT}:8000'
     command: 'uvicorn --factory api.main:create_app --host 0.0.0.0 --port 8000 --reload'
@@ -22,7 +22,7 @@ services:
     image: postgres:15
     container_name: smart_messenger_postgres
     env_file:
-      - .env
+      - .env.example
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -37,7 +37,7 @@ services:
     image: mongo:8
     container_name: smart_messenger_mongodb
     env_file:
-      - .env
+      - .env.example
     ports:
       - '${MONGODB_PORT}:27017'
     volumes:

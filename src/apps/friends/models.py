@@ -1,35 +1,27 @@
-from sqlalchemy import Column, Integer, ForeignKey, Enum as SqlEnum, UniqueConstraint
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from enum import Enum
+from sqlalchemy import Enum, DateTime, func, ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+import enum
 from src.databases import Base
 
 
-class RequestStatus(str, Enum):
+class FriendRequestStatus(str, enum.Enum):
     pending = "pending"
     accepted = "accepted"
-    rejected = "rejected"
+    declined = "declined"
 
 
 class FriendRequest(Base):
     __tablename__ = "friend_requests"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    sender_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    receiver_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    status: Mapped[RequestStatus] = mapped_column(SqlEnum(RequestStatus), default=RequestStatus.pending)
-
-    sender = relationship("User", foreign_keys=[sender_id], back_populates="sent_requests")
-    receiver = relationship("User", foreign_keys=[receiver_id], back_populates="received_requests")
+    __table_args__ = {"extend_existing": True}
 
 
-class Friend(Base):
-    __tablename__ = "friends"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    from_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    to_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    status: Mapped[FriendRequestStatus] = mapped_column(Enum(FriendRequestStatus), default=FriendRequestStatus.pending, nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=func.now(), server_default=func.now(),  onupdate=func.now(),nullable=False)
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    friend_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    from_user = relationship("User", foreign_keys=[from_user_id], back_populates="sent_friend_requests")
+    to_user = relationship("User", foreign_keys=[to_user_id], back_populates="received_friend_requests")
 
-    __table_args__ = (UniqueConstraint("user_id", "friend_id", name="unique_friendship"),)
-
-    user = relationship("User", foreign_keys=[user_id])
-    friend = relationship("User", foreign_keys=[friend_id])

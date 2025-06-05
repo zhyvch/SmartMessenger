@@ -44,6 +44,15 @@ SmartMessenger is a chat application backend that provides REST APIs for managin
 - `GET /auth/oauth/google/login` - Login with Google
 - `GET /auth/oauth/google/callback` - Google OAuth callback
 
+#### FRIEND REQUEST 
+- `POST /requests` - Send friend request
+- `POST /requests/{request_id}/accept` - Accept friend request
+- `POST /requests/{request_id}/decline` - Decline friend request
+- `DELETE /requests/{request_id}/delete` - Delete friend
+- `GET /friends` - Friends list
+
+
+
 ### WebSocket API
 - `WebSocket /chats/{chat_id}` - Establish a real-time connection to a specific chat
 
