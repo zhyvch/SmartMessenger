@@ -182,16 +182,7 @@ async def refresh_token(
         "token_type": "bearer",
     }
 
-@auth_router.delete("/users/me", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_account(
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_db),
-):
-    await session.delete(current_user)
-    await session.commit()
 
-
-# 2) Відновлення пароля
 @auth_router.post("/password-reset", status_code=status.HTTP_202_ACCEPTED)
 async def password_reset_request(
     data: EmailSchema,

@@ -21,6 +21,7 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_mongo()
+    await init_postgres()
     yield
     ...
 

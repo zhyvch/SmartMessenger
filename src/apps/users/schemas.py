@@ -26,6 +26,14 @@ class UserOut(BaseModel):
     class Config:
         orm_mode = True
 
+class UserUpdate(BaseModel):
+    first_name: Optional[str]
+    last_name: Optional[str]
+    phone_number: Optional[str]
+    username: Optional[str]
+
+    class Config:
+        anystr_strip_whitespace = True
 
 class Token(BaseModel):
     access_token: str
