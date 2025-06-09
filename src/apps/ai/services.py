@@ -19,7 +19,7 @@ class OpenAIService:
             response = self.client.chat.completions.create(
                 model='gpt-4o-mini',
                 messages=[
-                    {'role': 'user', 'content': system_prompt},
+                    {'role': 'system', 'content': system_prompt},
                     {'role': 'user', 'content': user_input},
                 ],
             )
