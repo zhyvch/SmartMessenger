@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 from uuid import UUID
 from beanie import Document
 
@@ -10,6 +11,7 @@ class ChatModel(Document):
     name: str
     is_group: bool
     owner_id: int
+    member_ids: List[int]
 
     class Settings:
         name = 'chats'
@@ -26,3 +28,16 @@ class MessageModel(Document):
 
     class Settings:
         name = 'messages'
+
+
+class ChatPermissionsModel(Document):
+    id: UUID
+    chat_id: UUID
+    user_id: int
+    can_send_messages: bool = True
+    can_change_permissions: bool = False
+    can_remove_members: bool = False
+    can_delete_other_messages: bool = False
+
+    class Settings:
+        name = 'chat_permissions'

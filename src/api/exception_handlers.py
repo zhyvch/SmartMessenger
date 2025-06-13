@@ -6,7 +6,8 @@ from pydantic import ValidationError
 from pymongo.errors import PyMongoError
 from sqlalchemy.exc import SQLAlchemyError
 
-from src.apps.chats.exceptions import ChatNotFoundException, MessageNotFoundException, WrongTypeException
+from src.apps.chats.exceptions import ChatNotFoundException, MessageNotFoundException, WrongTypeException, \
+    ChatPermissionsNotFoundException
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,17 @@ def exception_registry(app: FastAPI) -> None:
 
     @app.exception_handler(MessageNotFoundException)
     def handle_message_not_found_exception(request: Request, exc: MessageNotFoundException):
+        logger.error('%s: %s', exc.__class__.__name__, exc.message)
+
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                'message': f'{exc.message}'
+            }
+        )
+
+    @app.exception_handler(ChatPermissionsNotFoundException)
+    def handle_chat_permissions_not_found_exception(request: Request, exc: ChatPermissionsNotFoundException):
         logger.error('%s: %s', exc.__class__.__name__, exc.message)
 
         return JSONResponse(
