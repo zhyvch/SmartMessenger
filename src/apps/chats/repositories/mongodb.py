@@ -1,11 +1,12 @@
 import logging
 from uuid import UUID
 
-from src.apps.chats.exceptions import ChatNotFoundException, MessageNotFoundException
-from src.apps.chats.converters import ChatConverter, MessageConverter
-from src.apps.chats.entities import Chat, Message
-from src.apps.chats.models import ChatModel, MessageModel
-from src.apps.chats.repositories import BaseChatRepository, BaseMessageRepository
+from apps.chats.schemas import UpdateChatPermissionsSchema
+from src.apps.chats.exceptions import ChatNotFoundException, MessageNotFoundException, ChatPermissionsNotFoundException
+from src.apps.chats.converters import ChatConverter, MessageConverter, ChatPermissionsConverter
+from src.apps.chats.entities import Chat, Message, ChatPermissions
+from src.apps.chats.models import ChatModel, MessageModel, ChatPermissionsModel
+from src.apps.chats.repositories import BaseChatRepository, BaseMessageRepository, BaseChatPermissionsRepository
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,16 @@ class BeanieChatRepository(BaseChatRepository):
             raise ChatNotFoundException(chat_id=chat_id)
 
         await chat.delete()
+
+    async def get_private_chat_by_member_ids(self, member_1_id: int, member_2_id: int) -> Chat | None:
+        logger.info('Getting private chat with member ids: \'%s\' and \'%s\'', member_1_id, member_2_id)
+        chat = await self.model.find_one(
+            self.model.is_group is False,
+            member_1_id in self.model.member_ids,
+            member_2_id in self.model.member_ids
+        )
+
+        return self.converter.to_entity(chat) if chat else None
 
 
 class BeanieMessageRepository(BaseMessageRepository):
@@ -73,3 +84,68 @@ class BeanieMessageRepository(BaseMessageRepository):
             raise MessageNotFoundException(message_id=message_id)
 
         await message.delete()
+
+    async def delete_chat_messages(self, chat_id: UUID) -> None:
+        logger.info('Deleting messages for chat with id \'%s\'', chat_id)
+        await self.model.find(self.model.chat_id == chat_id).delete()
+
+
+class BeanieChatPermissionsRepository(BaseChatPermissionsRepository):
+    model = ChatPermissionsModel
+    converter = ChatPermissionsConverter
+
+    async def get_user_chat_permissions(self, chat_id: UUID, user_id: int) -> ChatPermissions:
+        logger.info('Retrieving chat permissions for user with id \'%s\' in chat with id \'%s\'',
+                    chat_id, user_id
+                    )
+        chat_permissions = await self.model.find_one(
+            self.model.chat_id == chat_id,
+            self.model.user_id == user_id
+        )
+        if chat_permissions is None:
+            logger.error('Chat permissions for user with id \'%s\' in chat with id \'%s\' not found', user_id, chat_id)
+            raise ChatPermissionsNotFoundException(chat_id=chat_id, user_id=user_id)
+
+        return self.converter.to_entity(chat_permissions)
+
+    async def add_user_chat_permissions(self, chat_permissions: ChatPermissions) -> None:
+        logger.info('Adding chat permissions with id \'%s\'', chat_permissions.id)
+        await self.model.insert_one(self.converter.to_model(chat_permissions))
+
+    async def delete_all_user_chat_permissions(self, chat_id: UUID) -> None:
+        logger.info('Deleting all chat permissions for chat with id \'%s\'', chat_id)
+        await self.model.find(self.model.chat_id == chat_id).delete()
+
+    async def delete_user_chat_permissions(self, chat_id: UUID, user_id: int) -> None:
+        logger.info('Deleting chat permissions for member with id \'%s\' in chat with id \'%s\'', user_id, chat_id)
+        chat_permissions = await self.model.find_one(
+            self.model.chat_id == chat_id,
+            self.model.user_id == user_id
+        )
+        if chat_permissions is None:
+            logger.error('Chat permissions for user with id \'%s\' in chat with id \'%s\' not found', user_id, chat_id)
+            raise ChatPermissionsNotFoundException(chat_id=chat_id, user_id=user_id)
+
+        await chat_permissions.delete()
+
+    async def update_user_chat_permissions(
+        self,
+        chat_id: UUID,
+        user_id: int,
+        new_chat_permissions: UpdateChatPermissionsSchema
+    ) -> None:
+        logger.info('Updating chat permissions for member with id \'%s\' in chat with id \'%s\'', user_id, chat_id)
+        chat_permissions = await self.model.find_one(
+            self.model.chat_id == chat_id,
+            self.model.user_id == user_id
+        )
+        if chat_permissions is None:
+            logger.error('Chat permissions for user with id \'%s\' in chat with id \'%s\' not found', user_id, chat_id)
+            raise ChatPermissionsNotFoundException(chat_id=chat_id, user_id=user_id)
+
+        await chat_permissions.set({
+            self.model.can_send_messages: new_chat_permissions.can_send_messages,
+            self.model.can_change_permissions: new_chat_permissions.can_change_permissions,
+            self.model.can_remove_members: new_chat_permissions.can_remove_members,
+            self.model.can_delete_other_messages: new_chat_permissions.can_delete_other_messages
+        })

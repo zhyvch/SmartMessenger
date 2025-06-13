@@ -1,9 +1,10 @@
 import logging
 from dataclasses import dataclass
 from uuid import UUID
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 
-from src.apps.chats.entities import Chat, Message
+from apps.chats.schemas import UpdateChatPermissionsSchema
+from src.apps.chats.entities import Chat, Message, ChatPermissions
 from src.apps.chats.services import BaseChatService
 from src.apps.chats.websocket.connections import ConnectionManager
 from src.apps.ai.services import OpenAIService
@@ -16,9 +17,49 @@ class ChatService(BaseChatService):
     connection_manager: ConnectionManager
     ai_service: OpenAIService
 
-    async def create_chat(self, chat: Chat) -> None:
-        logger.info('Creating chat with id \'%s\'', chat.id)
+    async def create_private_chat(self, chat: Chat, other_user_id) -> None:
+        logger.info('Creating private chat with id \'%s\'', chat.id)
+
+        if chat.owner_id == other_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Users cannot create private chat with themselves"
+            )
+
+        existing_chat = await self.chat_repo.get_private_chat_by_member_ids(chat.owner_id, other_user_id)
+        if existing_chat:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Users with ids {chat.owner_id} and {other_user_id} already have private chat with id "
+                       f"{existing_chat.id}"
+            )
+
         await self.chat_repo.add_chat(chat)
+
+        created_chat = await self.get_chat(chat.id)
+        created_chat.member_ids.append(other_user_id)
+        await created_chat.save()
+
+        await self.chat_permissions_repo.add_user_chat_permissions(ChatPermissions(
+            chat_id=chat.id,
+            user_id=chat.owner_id,
+        ))
+        await self.chat_permissions_repo.add_user_chat_permissions(ChatPermissions(
+            chat_id=chat.id,
+            user_id=other_user_id,
+        ))
+
+    async def create_group_chat(self, chat: Chat) -> None:
+        logger.info('Creating group chat with id \'%s\'', chat.id)
+        await self.chat_repo.add_chat(chat)
+        await self.chat_permissions_repo.add_user_chat_permissions(ChatPermissions(
+            chat_id=chat.id,
+            user_id=chat.owner_id,
+            can_send_messages=True,
+            can_change_permissions=True,
+            can_remove_members=True,
+            can_delete_other_messages=True
+        ))
 
     async def get_chat(self, chat_id: UUID) -> Chat:
         logger.info('Retrieving chat with id \'%s\'', chat_id)
@@ -27,9 +68,13 @@ class ChatService(BaseChatService):
     async def delete_chat(self, chat_id: UUID) -> None:
         logger.info('Deleting chat with id \'%s\'', chat_id)
         await self.chat_repo.delete_chat(chat_id)
+        await self.message_repo.delete_chat_messages(chat_id)
+        await self.chat_permissions_repo.delete_all_user_chat_permissions(chat_id)
 
     async def create_message(self, message: Message) -> None:
         logger.info('Creating message to chat with id \'%s\'', message.chat_id)
+        check_chat_exists = await self.get_chat(message.chat_id)
+
         await self.message_repo.add_message(message)
         await self.connection_manager.send_all(message.chat_id, message.content.encode())
 
@@ -50,15 +95,114 @@ class ChatService(BaseChatService):
             await self.message_repo.add_message(ai_message)
             await self.connection_manager.send_all(ai_message.chat_id, ai_message.content.encode())
 
-
-    async def get_message(self, message_id: UUID) -> Message:
+    async def get_message(self, chat_id: UUID, message_id: UUID) -> Message:
         logger.info('Retrieving message with id \'%s\'', message_id)
-        return await self.message_repo.get_message(message_id)
+        check_chat_exists = await self.get_chat(chat_id)
+
+        message = await self.message_repo.get_message(message_id)
+        if message.chat_id != chat_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Message with id {message_id} is not present in chat with id {chat_id}"
+            )
+
+        return message
 
     async def get_messages(self, chat_id: UUID) -> list[Message]:
         logger.info('Retrieving messages for chat with id \'%s\'', chat_id)
         return await self.message_repo.get_chat_messages(chat_id)
 
-    async def delete_message(self, message_id: UUID) -> None:
+    async def delete_message(self, chat_id: UUID, message_id: UUID) -> None:
         logger.info('Deleting message with id \'%s\'', message_id)
+        check_chat_exists = await self.get_chat(chat_id)
+
+        message = await self.message_repo.get_message(message_id)
+        if message.chat_id != chat_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Message with id {message_id} is not present in chat with id {chat_id}"
+            )
+
         await self.message_repo.delete_message(message_id)
+
+    async def add_chat_member(self, chat_id: UUID, user_id: int) -> None:
+        logger.info('Adding chat member with id \'%s\' to chat with id \'%s\'', user_id, chat_id)
+        chat = await self.get_chat(chat_id)
+
+        if not chat.is_group:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"No users can be added to private chat"
+            )
+
+        if user_id in chat.member_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"User with id {user_id} already is a member of chat with id {chat_id}"
+            )
+
+        chat.member_ids.append(user_id)
+        await chat.save()
+
+        await self.chat_permissions_repo.add_user_chat_permissions(ChatPermissions(
+            chat_id=chat_id,
+            user_id=user_id,
+        ))
+
+    async def remove_chat_member(self, chat_id: UUID, user_id: int) -> None:
+        logger.info('Removing chat member with id \'%s\' from chat with id \'%s\'', user_id, chat_id)
+        chat = await self.get_chat(chat_id)
+
+        if not chat.is_group:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"No users can be removed from private chat"
+            )
+
+        if user_id == chat.owner_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Chat owner cannot be removed"
+            )
+        elif user_id not in chat.member_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"User with id {user_id} is not a member of chat with id {chat_id}"
+            )
+
+        chat.member_ids.remove(user_id)
+        await chat.save()
+
+        await self.chat_permissions_repo.delete_user_chat_permissions(chat_id=chat_id, user_id=user_id)
+
+    async def update_user_chat_permissions(
+        self,
+        chat_id: UUID,
+        user_id: int,
+        new_chat_permissions: UpdateChatPermissionsSchema
+    ) -> None:
+        logger.info('Updating chat permissions for member with id \'%s\' in chat with id \'%s\'', user_id, chat_id)
+        chat = await self.get_chat(chat_id)
+
+        if not chat.is_group:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"User`s chat permissions cannot be changed in private chat"
+            )
+
+        if user_id == chat.owner_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Owner`s chat permissions cannot be changed"
+            )
+        elif user_id not in chat.member_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"User with id {user_id} is not a member of chat with id {chat_id}"
+            )
+
+        await self.chat_permissions_repo.update_user_chat_permissions(
+            chat_id=chat_id,
+            user_id=user_id,
+            new_chat_permissions=new_chat_permissions
+        )

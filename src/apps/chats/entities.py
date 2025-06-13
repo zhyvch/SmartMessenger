@@ -12,6 +12,7 @@ class Chat(BaseModel):
     name: str = Field(kw_only=True, max_length=255)
     is_group: bool = Field(default=False, kw_only=True)
     owner_id: int = Field(kw_only=True)
+    member_ids: list[int] = Field(default_factory=list, kw_only=True)
 
 
 class Message(BaseModel):
@@ -27,3 +28,13 @@ class Message(BaseModel):
 class ChatWithMessages(BaseModel):
     chat: Chat
     messages: list[Message] = Field(default_factory=list, kw_only=True)
+
+
+class ChatPermissions(BaseModel):
+    id: UUID = Field(default_factory=uuid4, kw_only=True)
+    chat_id: UUID = Field(kw_only=True)
+    user_id: int = Field(kw_only=True)
+    can_send_messages: bool = Field(default=True, kw_only=True)
+    can_change_permissions: bool = Field(default=False, kw_only=True)
+    can_remove_members: bool = Field(default=False, kw_only=True)
+    can_delete_other_messages: bool = Field(default=False, kw_only=True)

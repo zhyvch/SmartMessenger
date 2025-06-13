@@ -8,12 +8,12 @@ from src.settings.config import settings
 
 
 async def init_mongo():
-    from src.apps.chats.models import ChatModel, MessageModel
+    from src.apps.chats.models import ChatModel, MessageModel, ChatPermissionsModel
     client = AsyncIOMotorClient(settings.MONGODB_URL)
 
     await init_beanie(
         database=client[settings.MONGODB_DB],
-        document_models=[ChatModel, MessageModel]
+        document_models=[ChatModel, MessageModel, ChatPermissionsModel]
     )
 
 engine = create_async_engine(

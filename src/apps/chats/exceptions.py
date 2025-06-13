@@ -1,7 +1,11 @@
 from dataclasses import dataclass
 from uuid import UUID
-from src.apps.chats.entities import Chat as ChatEntity, Message as MessageEntity
-from src.apps.chats.models import ChatModel, MessageModel
+from src.apps.chats.entities import (
+    Chat as ChatEntity,
+    Message as MessageEntity,
+    ChatPermissions as ChatPermissionsEntity
+)
+from src.apps.chats.models import ChatModel, MessageModel, ChatPermissionsModel
 
 
 @dataclass
@@ -20,6 +24,16 @@ class MessageNotFoundException(Exception):
     @property
     def message(self):
         return f'Message with id {self.message_id} not found'
+
+
+@dataclass
+class ChatPermissionsNotFoundException(Exception):
+    chat_id: UUID
+    user_id: int
+
+    @property
+    def message(self):
+        return f'Chat permissions for user with id {self.user_id} in chat with id {self.chat_id} not found'
 
 
 @dataclass
@@ -50,3 +64,13 @@ class IsNotMessageEntityException(WrongTypeException):
 class IsNotMessageModelException(WrongTypeException):
     def __init__(self, gotten_type: str):
         super().__init__(type(MessageModel).__name__, gotten_type)
+
+
+class IsNotChatPermissionsEntityException(WrongTypeException):
+    def __init__(self, gotten_type: str):
+        super().__init__(type(ChatPermissionsEntity).__name__, gotten_type)
+
+
+class IsNotChatPermissionsModelException(WrongTypeException):
+    def __init__(self, gotten_type: str):
+        super().__init__(type(ChatPermissionsModel).__name__, gotten_type)
