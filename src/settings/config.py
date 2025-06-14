@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
 
     OPENAI_API_KEY: str
+    UNSPLASH_ACCESS_KEY: str
 
     MAIL_USERNAME: str
     MAIL_PASSWORD: str

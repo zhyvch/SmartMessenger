@@ -8,6 +8,8 @@ from src.apps.chats.entities import Chat, Message, ChatPermissions
 from src.apps.chats.services import BaseChatService
 from src.apps.chats.websocket.connections import ConnectionManager
 from src.apps.ai.services import OpenAIService
+from src.apps.ai.services import UnsplashService
+
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +18,7 @@ logger = logging.getLogger(__name__)
 class ChatService(BaseChatService):
     connection_manager: ConnectionManager
     ai_service: OpenAIService
+    unsplash_service: UnsplashService
 
     async def create_private_chat(self, chat: Chat, other_user_id) -> None:
         logger.info('Creating private chat with id \'%s\'', chat.id)
@@ -94,6 +97,23 @@ class ChatService(BaseChatService):
 
             await self.message_repo.add_message(ai_message)
             await self.connection_manager.send_all(ai_message.chat_id, ai_message.content.encode())
+
+        elif message.content.lower().startswith("@photo"):
+            query = message.content[6:].strip()
+
+            try:
+                photo_url = await self.unsplash_service.search_photo(query)
+            except HTTPException as e:
+                photo_url = "Error while getting photo: " + e.detail
+
+            photo_message = Message(
+                chat_id=message.chat_id,
+                sender_id="777",
+                content=photo_url,
+            )
+
+            await self.message_repo.add_message(photo_message)
+            await self.connection_manager.send_all(photo_message.chat_id, photo_message.content.encode())
 
     async def get_message(self, chat_id: UUID, message_id: UUID) -> Message:
         logger.info('Retrieving message with id \'%s\'', message_id)

@@ -12,7 +12,7 @@ from src.apps.chats.repositories import BaseChatRepository, BaseMessageRepositor
 from src.apps.chats.repositories import BeanieChatRepository, BeanieMessageRepository, BeanieChatPermissionsRepository
 from src.apps.chats.services import BaseChatService, ChatService
 from src.apps.chats.websocket.connections import ConnectionManager
-from src.apps.ai.services import OpenAIService
+from src.apps.ai.services import OpenAIService, UnsplashService
 
 from src.settings.config import settings
 
@@ -40,7 +40,7 @@ ConnectionManagerDep = Annotated[ConnectionManager, Depends(get_connection_manag
 
 openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
 ai_service = OpenAIService(client=openai_client)
-
+unsplash_service = UnsplashService(access_key=settings.UNSPLASH_ACCESS_KEY)
 
 def get_chat_service(
     chat_repo: ChatRepositoryDep,
@@ -53,7 +53,8 @@ def get_chat_service(
         message_repo=message_repo,
         chat_permissions_repo=chat_permissions_repo,
         connection_manager=connection_manager,
-        ai_service=ai_service
+        ai_service=ai_service,
+        unsplash_service=unsplash_service,
     )
 
 
