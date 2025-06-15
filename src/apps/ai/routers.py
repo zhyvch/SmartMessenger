@@ -1,9 +1,10 @@
 from fastapi import APIRouter, status, Depends, Query
 
-from src.apps.ai.dependencies import OpenAIServiceDep
+from src.apps.ai.dependencies import OpenAIServiceDep, CurrentUserDep
 from src.apps.ai.schemas import AskResponseSchema, AskSchema
 from src.apps.ai.services import UnsplashService
 from src.apps.ai.dependencies import get_unsplash_service
+
 
 ai_router = APIRouter()
 
@@ -17,10 +18,12 @@ ai_router = APIRouter()
 )
 async def ask_question(
     schema: AskSchema,
+    user: CurrentUserDep,
     service: OpenAIServiceDep,
 ):
     answer = await service.ask(schema.user_input)
     return {'response': answer}
+
 
 @ai_router.get(
     "/photo",
@@ -29,6 +32,7 @@ async def ask_question(
     status_code=status.HTTP_200_OK,
 )
 async def get_photo(
+    user: CurrentUserDep,
     query: str = Query(..., min_length=1),
     service: UnsplashService = Depends(get_unsplash_service),
 ):

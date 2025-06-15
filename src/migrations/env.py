@@ -14,6 +14,7 @@ if project_root not in sys.path:
 
 
 from src.apps.users.models import User, RevokedToken
+from src.apps.posts.models import PostModel, LikeModel, CommentModel
 from src.databases import Base
 
 from src.settings.config import settings

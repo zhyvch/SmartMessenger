@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from uuid import UUID
 
-from apps.chats.schemas import UpdateChatPermissionsSchema
+from src.apps.chats.schemas import UpdateChatPermissionsSchema
 from src.apps.chats.entities import Chat, Message
 from src.apps.chats.repositories import BaseChatRepository, BaseMessageRepository, BaseChatPermissionsRepository
 
@@ -55,9 +55,9 @@ class BaseChatService(ABC):
 
     @abstractmethod
     async def update_user_chat_permissions(
-            self,
-            chat_id: UUID,
-            user_id: int,
-            new_chat_permissions: UpdateChatPermissionsSchema
+        self,
+        chat_id: UUID,
+        user_id: int,
+        new_chat_permissions: UpdateChatPermissionsSchema
     ) -> None:
         ...
