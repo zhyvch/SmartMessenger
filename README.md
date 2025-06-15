@@ -67,6 +67,13 @@ SmartMessenger is a comprehensive social platform backend that provides REST API
 - `DELETE /api/v1/chats/{chat_id}/members/{user_id}` - Remove member from chat
 - `PATCH /api/v1/chats/{chat_id}/members/{user_id}/permissions` - Update member permissions
 
+#### Friends
+- `POST /friends/requests` - Send friend request
+- `POST /friends/requests/{request_id}/accept` - Accept friend request
+- `POST /friends/requests/{request_id}/decline` - Decline friend request
+- `DELETE /friends/requests/{request_id}` - Delete friend
+- `GET /friends` - Friends list
+
 #### AI Features
 - `POST /api/v1/ai/ask` - Get an AI response to a query
 - `GET /api/v1/ai/photo` - Search for photos from Unsplash

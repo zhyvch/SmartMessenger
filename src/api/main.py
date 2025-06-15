@@ -12,6 +12,7 @@ from src.settings.config import settings
 from src.api.v1.routers import v1_router, v1_ws_router
 
 
+
 logging.basicConfig(
     level=settings.LOG_LEVEL,
     format=settings.LOG_FORMAT,

@@ -78,6 +78,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=BASE_PATH / '.env',
+        extra='ignore',
     )
 
 
