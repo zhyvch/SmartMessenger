@@ -3,11 +3,20 @@ from uuid import UUID
 
 from fastapi import APIRouter, status
 
-from apps.users.dependencies import CheckUserExistsByIDDep
-from src.apps.chats.dependencies import ChatServiceDep, ChatMemberDep, ChatOwnerDep, SendPermissionDep, \
-    CurrentUserDep, RemoveMembersPermissionDep, DeleteMessagesPermissionDep, ChangePermissionDep
+from src.apps.users.dependencies import CheckUserExistsByIDDep
+from src.apps.chats.dependencies import (
+    ChatServiceDep,
+    ChatMemberDep,
+    ChatOwnerDep,
+    SendPermissionDep,
+    CurrentUserDep,
+    RemoveMembersPermissionDep,
+    DeleteMessagesPermissionDep,
+    ChangePermissionDep,
+)
 from src.apps.chats.entities import Chat, Message, ChatWithMessages
 from src.apps.chats.schemas import CreateChatSchema, CreateMessageSchema, UpdateChatPermissionsSchema
+
 
 logger = logging.getLogger(__name__)
 chats_router = APIRouter()

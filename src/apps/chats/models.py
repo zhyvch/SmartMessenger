@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 from uuid import UUID
 from beanie import Document
 
@@ -11,7 +10,7 @@ class ChatModel(Document):
     name: str
     is_group: bool
     owner_id: int
-    member_ids: List[int]
+    member_ids: list[int]
 
     class Settings:
         name = 'chats'

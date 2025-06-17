@@ -33,6 +33,20 @@ class User(Base):
         passive_deletes=True,
     )
 
+    #friends relationship
+    sent_friend_requests = relationship(
+        "FriendRequest",
+        foreign_keys="FriendRequest.from_user_id",
+        back_populates="from_user",
+        cascade="all, delete-orphan"
+    )
+    received_friend_requests = relationship(
+        "FriendRequest",
+        foreign_keys="FriendRequest.to_user_id",
+        back_populates="to_user",
+        cascade="all, delete-orphan"
+    )
+
 
 class RevokedToken(Base):
     __tablename__ = 'revoked_tokens'
@@ -46,3 +60,7 @@ class RevokedToken(Base):
         'User',
         back_populates='revoked_tokens'
     )
+
+
+
+

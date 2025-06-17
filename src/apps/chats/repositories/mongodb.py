@@ -2,7 +2,7 @@ import logging
 from uuid import UUID
 from beanie.operators import In
 
-from apps.chats.schemas import UpdateChatPermissionsSchema
+from src.apps.chats.schemas import UpdateChatPermissionsSchema
 from src.apps.chats.exceptions import ChatNotFoundException, MessageNotFoundException, ChatPermissionsNotFoundException
 from src.apps.chats.converters import ChatConverter, MessageConverter, ChatPermissionsConverter
 from src.apps.chats.entities import Chat, Message, ChatPermissions

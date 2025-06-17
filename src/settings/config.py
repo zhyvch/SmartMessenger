@@ -9,8 +9,6 @@ class Settings(BaseSettings):
 
     DOCKER_RUN: bool = False
 
-    APP_URL: str = "http://localhost:8000" #???
-
     API_HOST: str = '127.0.0.1'
     API_PORT: int = 8000
     API_V1_PREFIX: str = '/api/v1'
@@ -43,6 +41,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
 
     OPENAI_API_KEY: str
+    UNSPLASH_ACCESS_KEY: str
 
     MAIL_USERNAME: str
     MAIL_PASSWORD: str
@@ -79,6 +78,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=BASE_PATH / '.env',
+        extra='ignore',
     )
 
 
