@@ -34,7 +34,7 @@ async def create_private_chat(
     current_user: CurrentUserDep,
     check_user: CheckUserExistsByIDDep
 ) -> str:
-    entity = schema.to_entity(owner_id=current_user.id, is_group=True)
+    entity = schema.to_entity(owner_id=current_user.id, is_group=False)
     await service.create_private_chat(chat=entity, other_user_id=user_id)
     return f'Private chat with id {entity.id} successfully created'
 
@@ -49,7 +49,7 @@ async def create_group_chat(
     service: ChatServiceDep,
     current_user: CurrentUserDep,
 ) -> str:
-    entity = schema.to_entity(owner_id=current_user.id, is_group=False)
+    entity = schema.to_entity(owner_id=current_user.id, is_group=True)
     await service.create_group_chat(chat=entity)
     return f'Group chat with id {entity.id} successfully created'
 
