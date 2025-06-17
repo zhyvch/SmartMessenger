@@ -1,5 +1,6 @@
 import logging
 from uuid import UUID
+from beanie.operators import In
 
 from apps.chats.schemas import UpdateChatPermissionsSchema
 from src.apps.chats.exceptions import ChatNotFoundException, MessageNotFoundException, ChatPermissionsNotFoundException
@@ -42,8 +43,8 @@ class BeanieChatRepository(BaseChatRepository):
         logger.info('Getting private chat with member ids: \'%s\' and \'%s\'', member_1_id, member_2_id)
         chat = await self.model.find_one(
             self.model.is_group is False,
-            member_1_id in self.model.member_ids,
-            member_2_id in self.model.member_ids
+            In(self.model.member_ids, [member_1_id]),
+            In(self.model.member_ids, [member_2_id])
         )
 
         return self.converter.to_entity(chat) if chat else None
