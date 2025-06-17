@@ -3,8 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from src.apps.chats.dependencies import ConnectionManagerDep
-
+from src.apps.chats.dependencies import ConnectionManagerDep, WebsocketChatMemberDep
 
 chats_ws_router = APIRouter()
 
@@ -13,6 +12,7 @@ chats_ws_router = APIRouter()
 async def websocket_endpoint(
     websocket: WebSocket,
     chat_id: UUID,
+    chat_member: WebsocketChatMemberDep,
     connection_manager: ConnectionManagerDep,
 ):
     await connection_manager.accept_connection(websocket=websocket, key=chat_id)

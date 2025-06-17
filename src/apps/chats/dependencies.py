@@ -1,13 +1,14 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, WebSocketException
 
 from openai import OpenAI
 
-from apps.chats.entities import ChatPermissions
+from src.apps.chats.entities import ChatPermissions
+from src.apps.users.dependencies import CurrentWebsocketUserDep
 from src.apps.users.models import User
-from apps.users.routers.auth import get_current_user
+from src.apps.users.routers.auth import get_current_user
 from src.apps.chats.repositories import BaseChatRepository, BaseMessageRepository, BaseChatPermissionsRepository
 from src.apps.chats.repositories import BeanieChatRepository, BeanieMessageRepository, BeanieChatPermissionsRepository
 from src.apps.chats.services import BaseChatService, ChatService
@@ -77,6 +78,23 @@ async def check_chat_member(
     return current_user
 
 ChatMemberDep = Annotated[User, Depends(check_chat_member)]
+
+
+async def check_websocket_chat_member(
+    chat_id: UUID,
+    chat_repo: ChatRepositoryDep,
+    current_user: CurrentWebsocketUserDep
+) -> User:
+    chat = await chat_repo.get_chat(chat_id)
+    if current_user.id not in chat.member_ids:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="User is not a member of this chat"
+        )
+
+    return current_user
+
+WebsocketChatMemberDep = Annotated[User, Depends(check_websocket_chat_member)]
 
 
 async def check_chat_owner(
