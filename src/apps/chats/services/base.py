@@ -26,6 +26,14 @@ class BaseChatService(ABC):
         ...
 
     @abstractmethod
+    async def get_user_chats(self, user_id: int) -> list[Chat]:
+        ...
+
+    @abstractmethod
+    async def mark_message_as_read(self, chat_id: UUID, message_id: UUID, user_id: int) -> None:
+        ...
+
+    @abstractmethod
     async def delete_chat(self, chat_id: UUID) -> None:
         ...
 

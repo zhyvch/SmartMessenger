@@ -15,6 +15,10 @@ class BaseChatRepository(ABC):
         ...
 
     @abstractmethod
+    async def get_user_chats(self, user_id: int) -> list[Chat]:
+        ...
+
+    @abstractmethod
     async def delete_chat(self, chat_id: UUID) -> None:
         ...
 
@@ -34,6 +38,10 @@ class BaseMessageRepository(ABC):
 
     @abstractmethod
     async def get_chat_messages(self, chat_id: UUID) -> list[Message]:
+        ...
+
+    @abstractmethod
+    async def mark_message_as_read(self, message_id: UUID, user_id: int) -> None:
         ...
 
     @abstractmethod

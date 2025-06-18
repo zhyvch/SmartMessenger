@@ -21,6 +21,7 @@ class Message(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), kw_only=True)
     content: str = Field(kw_only=True, max_length=255 * 1024)
     is_read: bool = Field(default=False, kw_only=True)
+    read_by: list[int] = Field(default_factory=list, kw_only=True)
     sender_id: int = Field(kw_only=True)
     chat_id: UUID = Field(kw_only=True)
 

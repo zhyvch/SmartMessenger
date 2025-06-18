@@ -22,11 +22,18 @@ class MessageModel(Document):
     updated_at: datetime
     content: str
     is_read: bool
+    read_by: list[int] = []  # List of user IDs who have read the message
     sender_id: int
     chat_id: UUID
 
     class Settings:
         name = 'messages'
+        indexes = [
+            "id",
+            "chat_id",
+            "sender_id",
+            [("chat_id", -1), ("created_at", -1)]  # Compound index for efficient chat message queries
+        ]
 
 
 class ChatPermissionsModel(Document):

@@ -45,3 +45,13 @@ class ConnectionManager(metaclass=SingletonMeta):
         for websocket in self.connections_map[key]:
             await websocket.send_json({'message': reason})
             await websocket.close()
+
+    async def send_typing_indicator(self, key: UUID, user_id: int, is_typing: bool):
+        logger.info('Sending typing indicator for user with id \'%s\' in chat with id \'%s\'', user_id, key)
+        message = json.dumps({
+            "type": "typing_indicator",
+            "user_id": user_id,
+            "is_typing": is_typing
+        })
+        for websocket in self.connections_map[key]:
+            await websocket.send_text(message)

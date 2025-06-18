@@ -193,3 +193,28 @@ async def update_user_chat_permissions(
         new_chat_permissions=new_chat_permissions
     )
     return f'Chat permissions for user with id {user_id} successfully changed in chat with id {chat_id}'
+
+@chats_router.get(
+    '/',
+    description='Retrieves all chats for the current user.',
+    status_code=status.HTTP_200_OK,
+)
+async def get_user_chats(
+    service: ChatServiceDep,
+    current_user: CurrentUserDep
+) -> list[Chat]:
+    return await service.get_user_chats(current_user.id)
+
+@chats_router.post(
+    '/{chat_id}/messages/{message_id}/read',
+    description='Marks a message as read by the current user.',
+    status_code=status.HTTP_200_OK,
+)
+async def mark_message_as_read(
+    chat_id: UUID,
+    message_id: UUID,
+    service: ChatServiceDep,
+    chat_member: ChatMemberDep
+) -> str:
+    await service.mark_message_as_read(chat_id, message_id, chat_member.id)
+    return f'Message with id {message_id} marked as read by user with id {chat_member.id}'

@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from uuid import UUID
 from fastapi import HTTPException, status
+import json
 
 from apps.chats.schemas import UpdateChatPermissionsSchema
 from src.apps.chats.entities import Chat, Message, ChatPermissions
@@ -67,6 +68,33 @@ class ChatService(BaseChatService):
     async def get_chat(self, chat_id: UUID) -> Chat:
         logger.info('Retrieving chat with id \'%s\'', chat_id)
         return await self.chat_repo.get_chat(chat_id)
+
+    async def get_user_chats(self, user_id: int) -> list[Chat]:
+        logger.info('Retrieving chats for user with id \'%s\'', user_id)
+        return await self.chat_repo.get_user_chats(user_id)
+
+    async def mark_message_as_read(self, chat_id: UUID, message_id: UUID, user_id: int) -> None:
+        logger.info('Marking message with id \'%s\' as read by user with id \'%s\'', message_id, user_id)
+        check_chat_exists = await self.get_chat(chat_id)
+
+        message = await self.message_repo.get_message(message_id)
+        if message.chat_id != chat_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Message with id {message_id} is not present in chat with id {chat_id}"
+            )
+
+        await self.message_repo.mark_message_as_read(message_id, user_id)
+
+        # Notify other users that the message has been read
+        await self.connection_manager.send_all(
+            chat_id,
+            json.dumps({
+                "type": "message_read",
+                "message_id": str(message_id),
+                "user_id": user_id
+            }).encode()
+        )
 
     async def delete_chat(self, chat_id: UUID) -> None:
         logger.info('Deleting chat with id \'%s\'', chat_id)

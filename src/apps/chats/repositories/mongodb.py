@@ -21,6 +21,13 @@ class BeanieChatRepository(BaseChatRepository):
         logger.info('Adding chat with id \'%s\'', chat.id)
         await self.model.insert_one(self.converter.to_model(chat))
 
+    async def get_user_chats(self, user_id: int) -> list[Chat]:
+        logger.info('Retrieving chats for user with id \'%s\'', user_id)
+        chats = await self.model.find(
+            In(self.model.member_ids, [user_id])
+        ).to_list()
+        return [self.converter.to_entity(chat) for chat in chats]
+
     async def get_chat(self, chat_id: UUID) -> Chat:
         logger.info('Retrieving chat with id \'%s\'', chat_id)
         chat = await self.model.find_one(self.model.id == chat_id)
@@ -66,6 +73,18 @@ class BeanieMessageRepository(BaseMessageRepository):
             raise MessageNotFoundException(message_id=message_id)
 
         return self.converter.to_entity(message)
+
+    async def mark_message_as_read(self, message_id: UUID, user_id: int) -> None:
+        logger.info('Marking message with id \'%s\' as read by user with id \'%s\'', message_id, user_id)
+        message = await self.model.find_one(self.model.id == message_id)
+        if message is None:
+            logger.error('Message with id \'%s\' not found', message_id)
+            raise MessageNotFoundException(message_id=message_id)
+
+        if user_id not in message.read_by:
+            message.read_by.append(user_id)
+            message.is_read = True
+            await message.save()
 
     async def get_chat_messages(self, chat_id: UUID) -> list[Message]:
         logger.info('Retrieving messages for chat with id \'%s\'', chat_id)
