@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr
 from typing import Optional
+
+from pydantic import BaseModel, EmailStr
 
 
 class UserCreate(BaseModel):
@@ -26,6 +27,7 @@ class UserOut(BaseModel):
     class Config:
         orm_mode = True
 
+
 class UserUpdate(BaseModel):
     first_name: Optional[str]
     last_name: Optional[str]
@@ -35,10 +37,11 @@ class UserUpdate(BaseModel):
     class Config:
         anystr_strip_whitespace = True
 
+
 class Token(BaseModel):
     access_token: str
     refresh_token: str
-    token_type: str = 'bearer'
+    token_type: str = "bearer"
 
 
 class TokenRefresh(BaseModel):

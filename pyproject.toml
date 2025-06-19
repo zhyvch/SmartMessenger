@@ -23,4 +23,16 @@ dependencies = [
     "asyncpg>=0.30.0",
     "alembic>=1.16.1",
     "fastapi-mail>=1.4.4",
+    "pre-commit>=4.2.0",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = ["E", "F", "B", "I"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+line-ending = "auto"

@@ -5,11 +5,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.apps.users.models import User
+from src.apps.users.routers.auth import get_current_user
 from src.apps.users.schemas import UserOut, UserUpdate
 from src.databases import get_async_db
-from src.apps.users.routers.auth import get_current_user
 
 users_router = APIRouter()
+
 
 # ─── Отримати список усіх активних користувачів ────────────────────────────────
 @users_router.get("/", response_model=List[UserOut])
@@ -44,7 +45,9 @@ async def read_user_by_id(
 ):
     user = await session.get(User, user_id)
     if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     return user
 
 
@@ -96,10 +99,14 @@ async def delete_user_by_id(
 ):
     # Припустимо, є поле current.is_superuser або current.is_admin, яке перевіряємо
     if not current.is_superuser:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
     user = await session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     await session.delete(user)
     await session.commit()
 
@@ -113,7 +120,9 @@ async def search_users(
     current: User = Depends(get_current_user),
 ):
     if not email and not username:
-        raise HTTPException(status_code=400, detail="Provide email or username to search")
+        raise HTTPException(
+            status_code=400, detail="Provide email or username to search"
+        )
     stmt = select(User)
     if email:
         stmt = stmt.where(User.email.ilike(f"%{email}%"))

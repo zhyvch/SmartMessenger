@@ -1,12 +1,11 @@
 import logging
 from dataclasses import dataclass
 
+import httpx
 from fastapi import HTTPException
 from openai import OpenAI
-import httpx
 
 from src.apps.ai.prompts import system_prompt
-
 
 logger = logging.getLogger(__name__)
 
@@ -18,16 +17,17 @@ class OpenAIService:
     async def ask(self, user_input: str) -> str:
         try:
             response = self.client.chat.completions.create(
-                model='gpt-4o-mini',
+                model="gpt-4o-mini",
                 messages=[
-                    {'role': 'system', 'content': system_prompt},
-                    {'role': 'user', 'content': user_input},
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_input},
                 ],
             )
             return response.choices[0].message.content
         except Exception as e:
-            logger.error(f'OpenAI API error: {e}')
-            raise HTTPException(status_code=500, detail='Internal Server Error')
+            logger.error(f"OpenAI API error: {e}")
+            raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 @dataclass
 class UnsplashService:
@@ -46,6 +46,8 @@ class UnsplashService:
 
         data = response.json()
         if not data.get("results"):
-            raise HTTPException(status_code=404, detail=f"No results found for '{query}'")
+            raise HTTPException(
+                status_code=404, detail=f"No results found for '{query}'"
+            )
 
         return data["results"][0]["urls"]["regular"]

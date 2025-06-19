@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+
 from pydantic import EmailStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,15 +10,15 @@ class Settings(BaseSettings):
 
     DOCKER_RUN: bool = False
 
-    API_HOST: str = '127.0.0.1'
+    API_HOST: str = "127.0.0.1"
     API_PORT: int = 8000
-    API_V1_PREFIX: str = '/api/v1'
-    API_DOCS_URL: str = '/api/docs'
+    API_V1_PREFIX: str = "/api/v1"
+    API_DOCS_URL: str = "/api/docs"
 
     DEBUG: bool = True
 
     LOG_LEVEL: int = logging.WARNING  # one of logging.getLevelNamesMapping().values()
-    LOG_FORMAT: str = '[%(asctime)s.%(msecs)03d] %(module)10s:%(lineno)-3d %(levelname)s - %(message)s'
+    LOG_FORMAT: str = "[%(asctime)s.%(msecs)03d] %(module)10s:%(lineno)-3d %(levelname)s - %(message)s"
 
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
@@ -33,7 +34,7 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str
 
-    JWT_ALGORITHM: str = 'HS256'
+    JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
 
@@ -55,30 +56,29 @@ class Settings(BaseSettings):
     @property
     def POSTGRES_URL(self) -> str:
         return (
-            f'postgresql+asyncpg://'
-            f'{self.POSTGRES_USER}:'
-            f'{self.POSTGRES_PASSWORD}@'
-            f'{self.POSTGRES_HOST}:'
-            f'{5432 if self.DOCKER_RUN else self.POSTGRES_PORT}/'
-            f'{self.POSTGRES_DB}'
+            f"postgresql+asyncpg://"
+            f"{self.POSTGRES_USER}:"
+            f"{self.POSTGRES_PASSWORD}@"
+            f"{self.POSTGRES_HOST}:"
+            f"{5432 if self.DOCKER_RUN else self.POSTGRES_PORT}/"
+            f"{self.POSTGRES_DB}"
         )
 
     @property
     def MONGODB_URL(self) -> str:
         return (
-            f'mongodb://'
-            f'{self.MONGODB_USER}:'
-            f'{self.MONGODB_PASSWORD}@'
-            f'{self.MONGODB_HOST}:'
-            f'{27017 if self.DOCKER_RUN else self.MONGODB_PORT}/'
-            f'{self.MONGODB_DB}'
-            f'?authSource=admin'
+            f"mongodb://"
+            f"{self.MONGODB_USER}:"
+            f"{self.MONGODB_PASSWORD}@"
+            f"{self.MONGODB_HOST}:"
+            f"{27017 if self.DOCKER_RUN else self.MONGODB_PORT}/"
+            f"{self.MONGODB_DB}"
+            f"?authSource=admin"
         )
 
-
     model_config = SettingsConfigDict(
-        env_file=BASE_PATH / '.env',
-        extra='ignore',
+        env_file=BASE_PATH / ".env",
+        extra="ignore",
     )
 
 

@@ -2,21 +2,15 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
-
+from sqlalchemy import engine_from_config, pool
 
 project_root = str(Path(__file__).parents[2])
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 
-from src.apps.users.models import User, RevokedToken
-from src.apps.posts.models import PostModel, LikeModel, CommentModel
 from src.databases import Base
-from src.apps.friends.models import FriendRequest
 from src.settings.config import settings
 
 # this is the Alembic Config object, which provides
@@ -80,7 +74,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata, compare_server_default=True,
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_server_default=True,
         )
 
         with context.begin_transaction():

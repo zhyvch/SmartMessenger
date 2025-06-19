@@ -1,3 +1,4 @@
+from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -5,15 +6,23 @@ from pydantic import BaseModel
 from src.apps.chats.entities import Chat, Message
 
 
+class Order(Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+
+class Pagination(BaseModel):
+    limit: int = 10
+    offset: int = 0
+    ordering: Order = Order.ASC
+
+
 class CreateChatSchema(BaseModel):
     name: str
 
     def to_entity(self, owner_id: int, is_group: bool) -> Chat:
         return Chat(
-            name=self.name,
-            is_group=is_group,
-            owner_id=owner_id,
-            member_ids=[owner_id]
+            name=self.name, is_group=is_group, owner_id=owner_id, member_ids=[owner_id]
         )
 
 

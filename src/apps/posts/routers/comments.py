@@ -1,4 +1,4 @@
-from fastapi import Depends, APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.apps.posts.dependencies import CurrentUserDep
@@ -6,11 +6,10 @@ from src.apps.posts.models import CommentModel
 from src.apps.posts.schemas import Comment, CommentUpdate
 from src.databases import get_async_db
 
-
 comments_router = APIRouter()
 
 
-@comments_router.get('/{comment_id}')
+@comments_router.get("/{comment_id}")
 async def get_comment_by_id(
     comment_id: int,
     user: CurrentUserDep,
@@ -18,12 +17,12 @@ async def get_comment_by_id(
 ) -> Comment:
     comment = await session.get(CommentModel, comment_id)
     if not comment:
-        raise HTTPException(status_code=404, detail='Comment not found')
+        raise HTTPException(status_code=404, detail="Comment not found")
 
     return Comment.model_validate(comment)
 
 
-@comments_router.patch('/{comment_id}')
+@comments_router.patch("/{comment_id}")
 async def update_comment(
     comment_id: int,
     schema: CommentUpdate,
@@ -32,7 +31,9 @@ async def update_comment(
 ) -> Comment:
     comment = await session.get(CommentModel, comment_id)
     if not comment or comment.user_id != user.id:
-        raise HTTPException(status_code=404, detail='Comment not found or access denied')
+        raise HTTPException(
+            status_code=404, detail="Comment not found or access denied"
+        )
 
     if schema.content:
         comment.content = schema.content
@@ -43,7 +44,7 @@ async def update_comment(
     return Comment.model_validate(comment)
 
 
-@comments_router.delete('/{comment_id}')
+@comments_router.delete("/{comment_id}")
 async def delete_comment(
     comment_id: int,
     user: CurrentUserDep,
@@ -51,8 +52,10 @@ async def delete_comment(
 ):
     comment = await session.get(CommentModel, comment_id)
     if not comment or comment.user_id != user.id:
-        raise HTTPException(status_code=404, detail='Comment not found or access denied')
+        raise HTTPException(
+            status_code=404, detail="Comment not found or access denied"
+        )
 
     await session.delete(comment)
     await session.commit()
-    return {'detail': 'Comment deleted successfully'}
+    return {"detail": "Comment deleted successfully"}
