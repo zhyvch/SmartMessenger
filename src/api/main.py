@@ -35,7 +35,15 @@ def create_app():
         docs_url=settings.API_DOCS_URL,
         debug=settings.DEBUG,
         lifespan=lifespan,
-        servers=[{'url': f'http://localhost:{settings.API_PORT}'}],
+        servers=[{"url": f"http://localhost:{settings.API_PORT}"}],
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept"],
     )
 
     app.add_middleware(
@@ -46,13 +54,6 @@ def create_app():
         same_site='lax',
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
-        allow_credentials=True,
-        allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allow_headers=['Authorization', 'Content-Type'],
-    )
 
     app.include_router(v1_router, prefix=settings.API_V1_PREFIX)
     app.include_router(v1_ws_router, prefix=settings.API_V1_PREFIX)
