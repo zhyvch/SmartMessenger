@@ -37,6 +37,14 @@ def create_app():
     )
 
     app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept"],
+    )
+
+    app.add_middleware(
         SessionMiddleware,
         secret_key=settings.SECRET_KEY,
         session_cookie='session',
@@ -44,12 +52,6 @@ def create_app():
         same_site='lax',
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # або ["http://localhost:8000"]
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
 
     app.include_router(v1_router, prefix=settings.API_V1_PREFIX)
     app.include_router(v1_ws_router, prefix=settings.API_V1_PREFIX)

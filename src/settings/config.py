@@ -1,6 +1,8 @@
 import logging
 from pathlib import Path
-from pydantic import EmailStr
+from typing import List
+
+from pydantic import EmailStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -51,6 +53,8 @@ class Settings(BaseSettings):
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
     MAIL_FROM_NAME: str = "SmartMessenger"
+
+    CORS_ORIGINS: List[str] = Field(default_factory=lambda: ["http://localhost:8000", "http://127.0.0.1:8000"])
 
     @property
     def POSTGRES_URL(self) -> str:
