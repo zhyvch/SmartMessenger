@@ -1,18 +1,20 @@
-from fastapi import APIRouter, status, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 
-from src.apps.ai.dependencies import OpenAIServiceDep, CurrentUserDep
+from src.apps.ai.dependencies import (
+    CurrentUserDep,
+    OpenAIServiceDep,
+    get_unsplash_service,
+)
 from src.apps.ai.schemas import AskResponseSchema, AskSchema
 from src.apps.ai.services import UnsplashService
-from src.apps.ai.dependencies import get_unsplash_service
-
 
 ai_router = APIRouter()
 
 
 @ai_router.post(
-    '/ask',
-    summary='Ask in AI',
-    description='Get an AI response to a user query',
+    "/ask",
+    summary="Ask in AI",
+    description="Get an AI response to a user query",
     status_code=status.HTTP_200_OK,
     response_model=AskResponseSchema,
 )
@@ -22,7 +24,7 @@ async def ask_question(
     service: OpenAIServiceDep,
 ):
     answer = await service.ask(schema.user_input)
-    return {'response': answer}
+    return {"response": answer}
 
 
 @ai_router.get(

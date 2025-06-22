@@ -1,0 +1,22 @@
+FROM python:3.13.1-slim-bullseye
+
+WORKDIR /app
+
+COPY pyproject.toml .
+COPY uv.lock .
+RUN pip install --no-cache-dir uv && \
+    uv pip install --system -e .
+
+COPY . .
+
+ENV PYTHONPATH=/app
+
+RUN echo '#!/bin/sh\n\
+echo "Waiting for PostgreSQL to start..."\n\
+sleep 5\n\
+echo "Running database migrations..."\n\
+alembic upgrade head\n\
+echo "Migrations completed successfully."\n\
+' > /app/run-migrations.sh && chmod +x /app/run-migrations.sh
+
+ENTRYPOINT ["/app/run-migrations.sh"]

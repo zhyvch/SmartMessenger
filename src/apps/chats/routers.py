@@ -3,20 +3,24 @@ from uuid import UUID
 
 from fastapi import APIRouter, status
 
-from src.apps.users.dependencies import CheckUserExistsByIDDep
 from src.apps.chats.dependencies import (
-    ChatServiceDep,
+    ChangePermissionDep,
     ChatMemberDep,
     ChatOwnerDep,
-    SendPermissionDep,
+    ChatServiceDep,
     CurrentUserDep,
-    RemoveMembersPermissionDep,
     DeleteMessagesPermissionDep,
-    ChangePermissionDep,
+    PaginationDep,
+    RemoveMembersPermissionDep,
+    SendPermissionDep,
 )
-from src.apps.chats.entities import Chat, Message, ChatWithMessages
-from src.apps.chats.schemas import CreateChatSchema, CreateMessageSchema, UpdateChatPermissionsSchema
-
+from src.apps.chats.entities import Chat, ChatWithMessages, Message
+from src.apps.chats.schemas import (
+    CreateChatSchema,
+    CreateMessageSchema,
+    UpdateChatPermissionsSchema,
+)
+from src.apps.users.dependencies import CheckUserExistsByIDDep
 
 logger = logging.getLogger(__name__)
 chats_router = APIRouter()
@@ -32,7 +36,7 @@ async def create_private_chat(
     user_id: int,
     service: ChatServiceDep,
     current_user: CurrentUserDep,
-    check_user: CheckUserExistsByIDDep
+    check_user: CheckUserExistsByIDDep,
 ) -> str:
     entity = schema.to_entity(owner_id=current_user.id, is_group=False)
     await service.create_private_chat(chat=entity, other_user_id=user_id)
@@ -60,9 +64,7 @@ async def create_group_chat(
     status_code=status.HTTP_200_OK,
 )
 async def get_chat(
-    chat_id: UUID,
-    service: ChatServiceDep,
-    chat_member: ChatMemberDep
+    chat_id: UUID, service: ChatServiceDep, chat_member: ChatMemberDep
 ) -> Chat:
     return await service.get_chat(chat_id)
 
@@ -73,9 +75,7 @@ async def get_chat(
     status_code=status.HTTP_200_OK,
 )
 async def delete_chat(
-    chat_id: UUID,
-    service: ChatServiceDep,
-    chat_owner: ChatOwnerDep
+    chat_id: UUID, service: ChatServiceDep, chat_owner: ChatOwnerDep
 ) -> str:
     await service.delete_chat(chat_id)
     return f'Chat with id {chat_id} successfully deleted'
@@ -83,17 +83,23 @@ async def delete_chat(
 
 @chats_router.get(
     '/{chat_id}/messages',
-    description='Retrieves all messages for a chat.',
+    description='Retrieves messages for a chat with pagination.',
     status_code=status.HTTP_200_OK,
 )
 async def get_chat_messages(
     chat_id: UUID,
     service: ChatServiceDep,
-    chat_member: ChatMemberDep
+    chat_member: ChatMemberDep,
+    pagination: PaginationDep,
 ) -> ChatWithMessages:
     return ChatWithMessages(
         chat=await service.get_chat(chat_id),
-        messages=await service.get_messages(chat_id),
+        messages=await service.get_messages(
+            chat_id,
+            offset=pagination.offset,
+            limit=pagination.limit,
+            ordering=pagination.ordering,
+        ),
     )
 
 
@@ -106,7 +112,7 @@ async def create_message(
     chat_id: UUID,
     schema: CreateMessageSchema,
     service: ChatServiceDep,
-    chat_member: SendPermissionDep
+    chat_member: SendPermissionDep,
 ) -> str:
     entity = schema.to_entity(chat_id=chat_id, sender_id=chat_member.id)
     await service.create_message(entity)
@@ -119,10 +125,7 @@ async def create_message(
     status_code=status.HTTP_200_OK,
 )
 async def get_message(
-    chat_id: UUID,
-    message_id: UUID,
-    service: ChatServiceDep,
-    chat_member: ChatMemberDep
+    chat_id: UUID, message_id: UUID, service: ChatServiceDep, chat_member: ChatMemberDep
 ) -> Message:
     return await service.get_message(chat_id, message_id)
 
@@ -136,7 +139,7 @@ async def delete_message(
     chat_id: UUID,
     message_id: UUID,
     service: ChatServiceDep,
-    chat_member: DeleteMessagesPermissionDep
+    chat_member: DeleteMessagesPermissionDep,
 ) -> str:
     await service.delete_message(chat_id, message_id)
     return f'Message with id {message_id} successfully deleted'
@@ -152,7 +155,7 @@ async def add_chat_member(
     user_id: int,
     service: ChatServiceDep,
     chat_member: ChatMemberDep,
-    check_user: CheckUserExistsByIDDep
+    check_user: CheckUserExistsByIDDep,
 ) -> str:
     await service.add_chat_member(chat_id=chat_id, user_id=user_id)
     return f'User with id {user_id} successfully added to chat with id {chat_id}'
@@ -168,7 +171,7 @@ async def remove_chat_member(
     user_id: int,
     service: ChatServiceDep,
     chat_member: RemoveMembersPermissionDep,
-    check_user: CheckUserExistsByIDDep
+    check_user: CheckUserExistsByIDDep,
 ) -> str:
     await service.remove_chat_member(chat_id=chat_id, user_id=user_id)
     return f'User with id {user_id} successfully removed from chat with id {chat_id}'
@@ -185,14 +188,13 @@ async def update_user_chat_permissions(
     new_chat_permissions: UpdateChatPermissionsSchema,
     service: ChatServiceDep,
     chat_member: ChangePermissionDep,
-    check_user: CheckUserExistsByIDDep
+    check_user: CheckUserExistsByIDDep,
 ) -> str:
     await service.update_user_chat_permissions(
-        chat_id=chat_id,
-        user_id=user_id,
-        new_chat_permissions=new_chat_permissions
+        chat_id=chat_id, user_id=user_id, new_chat_permissions=new_chat_permissions
     )
     return f'Chat permissions for user with id {user_id} successfully changed in chat with id {chat_id}'
+
 
 @chats_router.get(
     '/',
@@ -200,10 +202,10 @@ async def update_user_chat_permissions(
     status_code=status.HTTP_200_OK,
 )
 async def get_user_chats(
-    service: ChatServiceDep,
-    current_user: CurrentUserDep
+    service: ChatServiceDep, current_user: CurrentUserDep
 ) -> list[Chat]:
     return await service.get_user_chats(current_user.id)
+
 
 @chats_router.post(
     '/{chat_id}/messages/{message_id}/read',
@@ -211,10 +213,9 @@ async def get_user_chats(
     status_code=status.HTTP_200_OK,
 )
 async def mark_message_as_read(
-    chat_id: UUID,
-    message_id: UUID,
-    service: ChatServiceDep,
-    chat_member: ChatMemberDep
+    chat_id: UUID, message_id: UUID, service: ChatServiceDep, chat_member: ChatMemberDep
 ) -> str:
     await service.mark_message_as_read(chat_id, message_id, chat_member.id)
-    return f'Message with id {message_id} marked as read by user with id {chat_member.id}'
+    return (
+        f'Message with id {message_id} marked as read by user with id {chat_member.id}'
+    )

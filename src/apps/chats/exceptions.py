@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 from uuid import UUID
-from src.apps.chats.entities import (
-    Chat as ChatEntity,
-    Message as MessageEntity,
-    ChatPermissions as ChatPermissionsEntity
-)
-from src.apps.chats.models import ChatModel, MessageModel, ChatPermissionsModel
+
+from src.apps.chats.entities import Chat as ChatEntity
+from src.apps.chats.entities import ChatPermissions as ChatPermissionsEntity
+from src.apps.chats.entities import Message as MessageEntity
+from src.apps.chats.models import ChatModel, ChatPermissionsModel, MessageModel
 
 
 @dataclass
@@ -14,7 +13,7 @@ class ChatNotFoundException(Exception):
 
     @property
     def message(self):
-        return f'Chat with id {self.chat_id} not found'
+        return f"Chat with id {self.chat_id} not found"
 
 
 @dataclass
@@ -23,7 +22,7 @@ class MessageNotFoundException(Exception):
 
     @property
     def message(self):
-        return f'Message with id {self.message_id} not found'
+        return f"Message with id {self.message_id} not found"
 
 
 @dataclass
@@ -33,7 +32,7 @@ class ChatPermissionsNotFoundException(Exception):
 
     @property
     def message(self):
-        return f'Chat permissions for user with id {self.user_id} in chat with id {self.chat_id} not found'
+        return f"Chat permissions for user with id {self.user_id} in chat with id {self.chat_id} not found"
 
 
 @dataclass
@@ -43,7 +42,7 @@ class WrongTypeException(Exception):
 
     @property
     def message(self):
-        return f'Wrong type. Expected {self.expected_type}, got {self.gotten_type}'
+        return f"Wrong type. Expected {self.expected_type}, got {self.gotten_type}"
 
 
 class IsNotChatEntityException(WrongTypeException):
