@@ -124,8 +124,8 @@ class ChatService(BaseChatService):
             chat_id=message.chat_id,
         )
 
-        if message.content.lower().startswith('@ai'):
-            question = message.content[3:].strip()
+        if '@ai ' in message.content.lower():
+            question = message.content[message.content.index('@ai') + 3 :].strip()
 
             try:
                 answer = await self.ai_service.ask(question)
@@ -151,8 +151,8 @@ class ChatService(BaseChatService):
                 ai_message.chat_id,
             )
 
-        elif message.content.lower().startswith('@photo'):
-            query = message.content[6:].strip()
+        elif '@photo ' in message.content.lower():
+            query = message.content[message.content.index('@photo') + 6 :].strip()
             try:
                 photo_url = await self.unsplash_service.search_photo(query)
             except UnsplashServiceException as e:

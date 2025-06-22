@@ -16,13 +16,12 @@ class OpenAIService:
 
     async def ask(self, user_input: str) -> str:
         try:
-            response = await self.client.chat.completions.create(
-                model='gpt-3.5-turbo',
+            response = self.client.chat.completions.create(
+                model='gpt-4o-mini',
                 messages=[
                     {'role': 'system', 'content': system_prompt},
                     {'role': 'user', 'content': user_input},
                 ],
-                max_tokens=150,
             )
             return response.choices[0].message.content
         except RateLimitError as e:

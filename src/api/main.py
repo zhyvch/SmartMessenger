@@ -35,15 +35,7 @@ def create_app():
         docs_url=settings.API_DOCS_URL,
         debug=settings.DEBUG,
         lifespan=lifespan,
-        servers=[{'url': f'http://localhost:{settings.API_PORT}'}],
-    )
-
-    app.add_middleware(
-        SessionMiddleware,
-        secret_key=settings.SECRET_KEY,
-        session_cookie='session',
-        max_age=3600,
-        same_site='lax',
+        servers=[{'url': f'http://{settings.API_HOST}:{settings.API_PORT}'}],
     )
 
     app.add_middleware(
@@ -52,6 +44,14 @@ def create_app():
         allow_credentials=True,
         allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allow_headers=['Authorization', 'Content-Type'],
+    )
+
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.SECRET_KEY,
+        session_cookie='session',
+        max_age=3600,
+        same_site='lax',
     )
 
     app.include_router(v1_router, prefix=settings.API_V1_PREFIX)

@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     DOCKER_RUN: bool = False
 
-    API_HOST: str = '127.0.0.1'
+    API_HOST: str = 'localhost'
     API_PORT: int = 8000
     API_V1_PREFIX: str = '/api/v1'
     API_DOCS_URL: str = '/api/docs'
@@ -79,6 +79,8 @@ class Settings(BaseSettings):
     @property
     def CORS_ORIGINS(self) -> list[str]:
         return [
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
             f'http://localhost:{self.API_PORT}',
             f'http://127.0.0.1:{self.API_PORT}',
             f'http://{self.API_HOST}:{self.API_PORT}',
