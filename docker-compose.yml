@@ -14,6 +14,7 @@ services:
     depends_on:
       - smart_messenger_postgres
       - smart_messenger_mongodb
+      - smart_messenger_migrations
     volumes:
       - ./src:/app/src
     restart: unless-stopped
@@ -47,6 +48,17 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
       - MONGO_INITDB_DATABASE=${MONGODB_DB}
     restart: unless-stopped
+
+  smart_messenger_migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrations
+    container_name: smart_messenger_migrations
+    env_file:
+      - .env
+    depends_on:
+      - smart_messenger_postgres
+    restart: "no"
 
 volumes:
   smart_messenger_pgdata:

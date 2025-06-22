@@ -6,15 +6,18 @@ from sqlalchemy.orm import DeclarativeBase
 from src.settings.config import settings
 
 
-async def init_mongo():
+async def init_mongo(client: AsyncIOMotorClient = None):
     from src.apps.chats.models import ChatModel, ChatPermissionsModel, MessageModel
 
-    client = AsyncIOMotorClient(settings.MONGODB_URL)
+    if not client:
+        client = AsyncIOMotorClient(settings.MONGODB_URL)
 
     await init_beanie(
         database=client[settings.MONGODB_DB],
         document_models=[ChatModel, MessageModel, ChatPermissionsModel],
     )
+
+    return client
 
 
 engine = create_async_engine(
@@ -31,7 +34,7 @@ session_factory = async_sessionmaker(autoflush=False, bind=engine)
 
 class Base(DeclarativeBase):
     def __repr__(self):
-        return f"<{self.__class__.__name__} {self.__dict__}>"
+        return f'<{self.__class__.__name__} {self.__dict__}>'
 
 
 async def init_postgres():

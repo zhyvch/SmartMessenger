@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 
+from src.apps.ai.exceptions import OpenAIServiceException, UnsplashServiceException
 from src.apps.ai.services import OpenAIService, UnsplashService
 from src.apps.chats.entities import Chat, ChatPermissions, Message
 from src.apps.chats.schemas import Order, UpdateChatPermissionsSchema
@@ -25,7 +26,7 @@ class ChatService(BaseChatService):
         if chat.owner_id == other_user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Users cannot create private chat with themselves",
+                detail='Users cannot create private chat with themselves',
             )
 
         existing_chat = await self.chat_repo.get_private_chat_by_member_ids(
@@ -34,8 +35,8 @@ class ChatService(BaseChatService):
         if existing_chat:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Users with ids {chat.owner_id} and {other_user_id} already have private chat with id "
-                f"{existing_chat.id}",
+                detail=f'Users with ids {chat.owner_id} and {other_user_id} already have private chat with id '
+                f'{existing_chat.id}',
             )
 
         await self.chat_repo.add_chat(chat)
@@ -92,7 +93,7 @@ class ChatService(BaseChatService):
         if message.chat_id != chat_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Message with id {message_id} is not present in chat with id {chat_id}",
+                detail=f'Message with id {message_id} is not present in chat with id {chat_id}',
             )
 
         await self.message_repo.mark_message_as_read(message_id, user_id)
@@ -123,13 +124,17 @@ class ChatService(BaseChatService):
             chat_id=message.chat_id,
         )
 
-        if message.content.lower().startswith("@ai"):
+        if message.content.lower().startswith('@ai'):
             question = message.content[3:].strip()
 
             try:
                 answer = await self.ai_service.ask(question)
-            except HTTPException as e:
-                answer = "Error while querying AI: " + e.detail
+            except OpenAIServiceException as e:
+                answer = f'Error while querying AI: {e.detail}'
+                logger.error(answer)
+            except Exception as e:
+                answer = f'Unexpected error while querying AI: {str(e)}'
+                logger.error(answer)
 
             ai_message = Message(
                 chat_id=message.chat_id,
@@ -146,13 +151,16 @@ class ChatService(BaseChatService):
                 ai_message.chat_id,
             )
 
-        elif message.content.lower().startswith("@photo"):
+        elif message.content.lower().startswith('@photo'):
             query = message.content[6:].strip()
-
             try:
                 photo_url = await self.unsplash_service.search_photo(query)
-            except HTTPException as e:
-                photo_url = "Error while getting photo: " + e.detail
+            except UnsplashServiceException as e:
+                photo_url = f'Error while getting photo: {e.detail}'
+                logger.error(photo_url)
+            except Exception as e:
+                photo_url = f'Unexpected error while getting photo: {str(e)}'
+                logger.error(photo_url)
 
             photo_message = Message(
                 chat_id=message.chat_id,
@@ -177,7 +185,7 @@ class ChatService(BaseChatService):
         if message.chat_id != chat_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Message with id {message_id} is not present in chat with id {chat_id}",
+                detail=f'Message with id {message_id} is not present in chat with id {chat_id}',
             )
 
         return message
@@ -201,7 +209,7 @@ class ChatService(BaseChatService):
         if message.chat_id != chat_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Message with id {message_id} is not present in chat with id {chat_id}",
+                detail=f'Message with id {message_id} is not present in chat with id {chat_id}',
             )
 
         await self.message_repo.delete_message(message_id)
@@ -215,13 +223,13 @@ class ChatService(BaseChatService):
         if not chat.is_group:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="No users can be added to private chat",
+                detail='No users can be added to private chat',
             )
 
         if user_id in chat.member_ids:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"User with id {user_id} already is a member of chat with id {chat_id}",
+                detail=f'User with id {user_id} already is a member of chat with id {chat_id}',
             )
 
         chat.member_ids.append(user_id)
@@ -242,18 +250,18 @@ class ChatService(BaseChatService):
         if not chat.is_group:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="No users can be removed from private chat",
+                detail='No users can be removed from private chat',
             )
 
         if user_id == chat.owner_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Chat owner cannot be removed",
+                detail='Chat owner cannot be removed',
             )
         elif user_id not in chat.member_ids:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"User with id {user_id} is not a member of chat with id {chat_id}",
+                detail=f'User with id {user_id} is not a member of chat with id {chat_id}',
             )
 
         chat.member_ids.remove(user_id)
@@ -278,18 +286,18 @@ class ChatService(BaseChatService):
         if not chat.is_group:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="User`s chat permissions cannot be changed in private chat",
+                detail='User`s chat permissions cannot be changed in private chat',
             )
 
         if user_id == chat.owner_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Owner`s chat permissions cannot be changed",
+                detail='Owner`s chat permissions cannot be changed',
             )
         elif user_id not in chat.member_ids:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"User with id {user_id} is not a member of chat with id {chat_id}",
+                detail=f'User with id {user_id} is not a member of chat with id {chat_id}',
             )
 
         await self.chat_permissions_repo.update_user_chat_permissions(

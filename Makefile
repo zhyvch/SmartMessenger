@@ -29,3 +29,7 @@ revision-upgrade:
 .PHONY: revision-downgrade
 revision-downgrade:
 	${EXEC} ${APP_CONTAINER} alembic downgrade -1
+
+.PHONY: run-migrations
+run-migrations:
+	${DC} -f ${COMPOSE_FILE} ${ENV} up --build smart_messenger_migrations
