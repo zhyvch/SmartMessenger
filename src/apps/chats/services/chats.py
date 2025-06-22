@@ -232,7 +232,7 @@ class ChatService(BaseChatService):
                 detail=f'User with id {user_id} already is a member of chat with id {chat_id}',
             )
 
-        chat.member_ids.append(user_id)
+        await self.chat_repo.add_chat_member(chat_id, user_id)
 
         await self.chat_permissions_repo.add_user_chat_permissions(
             ChatPermissions(
@@ -264,7 +264,7 @@ class ChatService(BaseChatService):
                 detail=f'User with id {user_id} is not a member of chat with id {chat_id}',
             )
 
-        chat.member_ids.remove(user_id)
+        await self.chat_repo.remove_chat_member(chat_id=chat_id, user_id=user_id)
 
         await self.chat_permissions_repo.delete_user_chat_permissions(
             chat_id=chat_id, user_id=user_id

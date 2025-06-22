@@ -20,7 +20,7 @@ class Chat(BaseModel):
 
 
 class Message(BaseModel):
-    id: UUID = Field(default_factory=uuid4, kw_only=True, exclude=True)
+    id: UUID = Field(default_factory=uuid4, kw_only=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), kw_only=True
     )

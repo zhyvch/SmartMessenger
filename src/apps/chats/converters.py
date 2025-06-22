@@ -56,6 +56,7 @@ class MessageConverter:
             updated_at=message.updated_at,
             content=message.content,
             is_read=message.is_read,
+            read_by=message.read_by,
             sender_id=message.sender_id,
             chat_id=message.chat_id,
         )
@@ -70,6 +71,7 @@ class MessageConverter:
             created_at=message.created_at,
             updated_at=message.updated_at,
             content=message.content,
+            read_by=message.read_by,
             is_read=message.is_read,
             sender_id=message.sender_id,
             chat_id=message.chat_id,
@@ -90,6 +92,8 @@ class ChatPermissionsConverter:
             user_id=chat_permissions.user_id,
             can_send_messages=chat_permissions.can_send_messages,
             can_change_permissions=chat_permissions.can_change_permissions,
+            can_remove_members=chat_permissions.can_remove_members,
+            can_delete_other_messages=chat_permissions.can_delete_other_messages,
         )
 
     @classmethod
@@ -105,4 +109,6 @@ class ChatPermissionsConverter:
             user_id=chat_permissions.user_id,
             can_send_messages=chat_permissions.can_send_messages,
             can_change_permissions=chat_permissions.can_change_permissions,
+            can_remove_members=chat_permissions.can_remove_members,
+            can_delete_other_messages=chat_permissions.can_delete_other_messages,
         )

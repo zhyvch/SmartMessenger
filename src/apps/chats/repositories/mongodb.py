@@ -56,6 +56,30 @@ class BeanieChatRepository(BaseChatRepository):
 
         await chat.delete()
 
+    async def add_chat_member(self, chat_id: UUID, user_id: int) -> None:
+        logger.info("Adding member with id '%s' to chat with id '%s'", user_id, chat_id)
+        chat = await self.model.find_one(self.model.id == chat_id)
+        if chat is None:
+            logger.error("Chat with id '%s' not found", chat_id)
+            raise ChatNotFoundException(chat_id=chat_id)
+
+        if user_id not in chat.member_ids:
+            chat.member_ids.append(user_id)
+            await chat.save()
+
+    async def remove_chat_member(self, chat_id: UUID, user_id: int) -> None:
+        logger.info(
+            "Removing member with id '%s' from chat with id '%s'", user_id, chat_id
+        )
+        chat = await self.model.find_one(self.model.id == chat_id)
+        if chat is None:
+            logger.error("Chat with id '%s' not found", chat_id)
+            raise ChatNotFoundException(chat_id=chat_id)
+
+        if user_id in chat.member_ids:
+            chat.member_ids.remove(user_id)
+            await chat.save()
+
     async def get_private_chat_by_member_ids(
         self, member_1_id: int, member_2_id: int
     ) -> Chat | None:
@@ -117,7 +141,7 @@ class BeanieMessageRepository(BaseMessageRepository):
 
         messages = (
             await self.model.find(self.model.chat_id == chat_id)
-            .sort(f"{'-' if ordering == Order.DESC else ''}created_at")
+            .sort(f'{"-" if ordering == Order.DESC else ""}created_at')
             .skip(offset)
             .limit(limit)
             .to_list()
@@ -168,7 +192,10 @@ class BeanieChatPermissionsRepository(BaseChatPermissionsRepository):
         self, chat_permissions: ChatPermissions
     ) -> None:
         logger.info("Adding chat permissions with id '%s'", chat_permissions.id)
-        await self.model.insert_one(self.converter.to_model(chat_permissions))
+        permissions = await self.model.insert_one(
+            self.converter.to_model(chat_permissions)
+        )
+        await permissions.save()
 
     async def delete_all_user_chat_permissions(self, chat_id: UUID) -> None:
         logger.info("Deleting all chat permissions for chat with id '%s'", chat_id)

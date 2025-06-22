@@ -26,14 +26,8 @@ from src.settings.config import settings
 def pagination_params(
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    ordering: Order = Order.ASC,
+    ordering: Order = Query(Order.ASC),
 ) -> Pagination:
-    if ordering not in ["asc", "desc"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Order must be either 'asc' or 'desc'",
-        )
-
     return Pagination(limit=limit, offset=offset, ordering=ordering)
 
 
@@ -96,7 +90,7 @@ async def check_chat_member(
     if current_user.id not in chat.member_ids:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User is not a member of this chat",
+            detail='User is not a member of this chat',
         )
 
     return current_user
@@ -112,7 +106,7 @@ async def check_websocket_chat_member(
     if current_user.id not in chat.member_ids:
         raise WebSocketException(
             code=status.WS_1008_POLICY_VIOLATION,
-            reason="User is not a member of this chat",
+            reason='User is not a member of this chat',
         )
 
     return current_user
@@ -128,7 +122,7 @@ async def check_chat_owner(
     if chat.is_group and current_user.id != chat.owner_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User is not an owner of this chat",
+            detail='User is not an owner of this chat',
         )
 
     return current_user
@@ -148,7 +142,7 @@ async def check_send_permission(
     if not permissions.can_send_messages:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User cannot send messages in this chat",
+            detail='User cannot send messages in this chat',
         )
 
     return current_member
@@ -166,7 +160,7 @@ async def check_change_permission(
     if user_id == current_member.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User cannot change own permissions in chats",
+            detail='User cannot change own permissions in chats',
         )
 
     permissions = await chat_permissions_repo.get_user_chat_permissions(
@@ -175,7 +169,7 @@ async def check_change_permission(
     if not permissions.can_change_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User cannot change other users permissions in this chat",
+            detail='User cannot change other users permissions in this chat',
         )
 
     return current_member
@@ -187,10 +181,15 @@ ChangePermissionDep = Annotated[ChatPermissions, Depends(check_change_permission
 async def check_remove_members_permission(
     chat_id: UUID,
     user_id: int,
+    chat_repo: ChatRepositoryDep,
     chat_permissions_repo: ChatPermissionsRepositoryDep,
     current_member: ChatMemberDep,
 ) -> User:
     if user_id == current_member.id:
+        return current_member
+
+    chat = await chat_repo.get_chat(chat_id)
+    if current_member.id == chat.owner_id:
         return current_member
 
     permissions = await chat_permissions_repo.get_user_chat_permissions(
@@ -199,7 +198,7 @@ async def check_remove_members_permission(
     if not permissions.can_remove_members:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User cannot remove other members in this chat",
+            detail='User cannot remove other members in this chat',
         )
 
     return current_member
@@ -228,7 +227,7 @@ async def check_delete_messages_permission(
     if not permissions.can_delete_other_messages:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User cannot delete other members messages in this chat",
+            detail='User cannot delete other members messages in this chat',
         )
 
     return current_member
