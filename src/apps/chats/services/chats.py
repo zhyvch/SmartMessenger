@@ -40,9 +40,7 @@ class ChatService(BaseChatService):
             )
 
         await self.chat_repo.add_chat(chat)
-
-        created_chat = await self.get_chat(chat.id)
-        created_chat.member_ids.append(other_user_id)
+        await self.chat_repo.add_chat_member(chat.id, other_user_id)
 
         await self.chat_permissions_repo.add_user_chat_permissions(
             ChatPermissions(

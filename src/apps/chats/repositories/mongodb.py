@@ -89,7 +89,7 @@ class BeanieChatRepository(BaseChatRepository):
             member_2_id,
         )
         chat = await self.model.find_one(
-            self.model.is_group is False,
+            self.model.is_group == False,
             In(self.model.member_ids, [member_1_id]),
             In(self.model.member_ids, [member_2_id]),
         )
